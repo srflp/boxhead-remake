@@ -14,12 +14,12 @@ export class Arena {
     this.entities = [];
     this.player = new Player(this, 48, 48, 48, 48);
     this.canvas = canvas;
-    this.update();
+    this.repaint();
   }
-  update = () => {
+  repaint = () => {
     this.canvas.clear();
     this.draw();
-    requestAnimationFrame(this.update);
+    requestAnimationFrame(this.repaint);
   };
   addEntity(entity: Player) {
     this.entities.push(entity);
@@ -34,12 +34,21 @@ export class Arena {
     let canvasY = y - viewportY;
     return [canvasX, canvasY] as const;
   }
-  fillRect(x: number, y: number, width: number, height: number) {
+  fillRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color = "black",
+  ) {
+    this.canvas.ctx.fillStyle = color;
     this.canvas.ctx.fillRect(...this.mapToCanvas(x, y), width, height);
   }
+  fillText(text: string, x: number, y: number, color = "black") {
+    this.canvas.ctx.fillStyle = color;
+    this.canvas.ctx.fillText(text, ...this.mapToCanvas(x, y));
+  }
   draw() {
-    this.canvas.ctx.fillStyle = "black";
-
     // borders
     this.fillRect(0, 0, this.width, 48); // top
     this.fillRect(0, this.height - 48, this.width, 48); // bottom
@@ -55,7 +64,7 @@ export class Arena {
       this.fillRect(0, i, this.width, 1);
     }
 
-    this.player.draw(this.canvas.ctx);
+    this.player.draw();
     // for (const entity of this.entities) {
     //   entity.draw(ctx);
     // }

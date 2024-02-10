@@ -8,6 +8,7 @@ export class Player {
   height: number;
   vx: number;
   vy: number;
+
   constructor(
     arena: Arena,
     x: number,
@@ -41,8 +42,7 @@ export class Player {
   set y(y: number) {
     this.#y = Math.max(0, Math.min(y, this.arena.height - this.height));
   }
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "red";
+  draw() {
     if (this.vx && this.vy) {
       this.x = this.x + this.vx / Math.sqrt(2);
       this.y = this.y + this.vy / Math.sqrt(2);
@@ -51,15 +51,12 @@ export class Player {
       this.y = this.y + this.vy;
     }
 
-    const [canvasX, canvasY] = this.arena.mapToCanvas(this.x, this.y);
-
-    ctx.fillRect(canvasX, canvasY, this.width, this.height);
-    ctx.fillStyle = "white";
-
-    ctx.fillText(
+    this.arena.fillRect(this.x, this.y, this.width, this.height, "red");
+    this.arena.fillText(
       Math.round(this.x) + " " + Math.round(this.y),
-      canvasX,
-      canvasY + 10,
+      this.x,
+      this.y + 10,
+      "white",
     );
   }
 }
