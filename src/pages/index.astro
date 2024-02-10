@@ -1,10 +1,20 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Boxhead Remake">
-	<main class="flex flex-col items-center justify-center h-screen">
-		<canvas width="1280" height="720" class="bg-slate-200"></canvas>
-		<div>:)</div>
-	</main>
+  <main class="flex flex-col items-center justify-center h-screen">
+    <canvas
+      id="boxhead-game"
+      width="1200"
+      height="720"
+      class="bg-slate-200 outline-none"
+      tabindex="0"></canvas>
+    <div>:)</div>
+  </main>
 </Layout>
+
+<script>
+  import "../game";
+  document.querySelector<HTMLCanvasElement>("#boxhead-game")?.focus();
+</script>
