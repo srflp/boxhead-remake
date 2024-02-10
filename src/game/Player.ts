@@ -42,20 +42,37 @@ export class Player {
   set y(y: number) {
     this.#y = Math.max(0, Math.min(y, this.arena.height - this.height));
   }
-  draw() {
+  updateVelocity() {
+    const { keysPressed } = this.arena.canvas;
+    const speed = 24;
+    this.vx = 0;
+    this.vy = 0;
+    if (keysPressed.has("a")) this.vx = -speed;
+    if (keysPressed.has("d")) this.vx = speed;
+    if (keysPressed.has("w")) this.vy = -speed;
+    if (keysPressed.has("s")) this.vy = speed;
+    const sqrt2 = Math.sqrt(2);
     if (this.vx && this.vy) {
-      this.x = this.x + this.vx / Math.sqrt(2);
-      this.y = this.y + this.vy / Math.sqrt(2);
-    } else {
-      this.x = this.x + this.vx;
-      this.y = this.y + this.vy;
+      this.vx = Math.round(this.vx / sqrt2);
+      this.vy = Math.round(this.vy / sqrt2);
     }
+  }
+  draw() {
+    this.updateVelocity();
+    this.x = this.x + this.vx;
+    this.y = this.y + this.vy;
 
-    this.arena.fillRect(this.x, this.y, this.width, this.height, "red");
+    this.arena.fillCircle(this.x, this.y, this.width / 2, "red");
     this.arena.fillText(
-      Math.round(this.x) + " " + Math.round(this.y),
-      this.x,
-      this.y + 10,
+      Math.round(this.x).toString(),
+      this.x + 5,
+      this.y + 20,
+      "white",
+    );
+    this.arena.fillText(
+      Math.round(this.y).toString(),
+      this.x + 5,
+      this.y + 30,
       "white",
     );
   }

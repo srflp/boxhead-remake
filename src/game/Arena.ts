@@ -1,18 +1,76 @@
 import { Canvas } from "./Canvas";
+import type { Entity } from "./Entity";
 import { Player } from "./Player";
+import { Wall } from "./Wall";
 import { clamp } from "./utils";
+// 1920 x 1920
+interface ArenaConfig {
+  width: number;
+  height: number;
+  layout: string;
+}
+
+const defaultConfig: ArenaConfig = {
+  width: 1920,
+  height: 1920,
+  layout: `
+########################################
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#      p                               #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+#                                      #
+########################################
+`,
+};
+
+const gridSize = 48;
 
 export class Arena {
   width: number;
   height: number;
-  entities: Player[];
-  player: Player;
+  entities: Entity[];
+  player!: Player;
   canvas: Canvas;
   constructor(canvas: Canvas, width: number, height: number) {
     this.width = width;
     this.height = height;
     this.entities = [];
-    this.player = new Player(this, 48, 48, 48, 48);
+    this.parseLayout(defaultConfig.layout);
+
     this.canvas = canvas;
     this.repaint();
   }
@@ -21,7 +79,30 @@ export class Arena {
     this.draw();
     requestAnimationFrame(this.repaint);
   };
-  addEntity(entity: Player) {
+  parseLayout(layout: string) {
+    const lines = defaultConfig.layout.trim().split("\n");
+    for (let y = 0; y < lines.length; y++) {
+      const line = lines[y];
+      for (let x = 0; x < line.length; x++) {
+        const char = line[x];
+        if (char === "#") {
+          this.addEntity(
+            new Wall(x * gridSize, y * gridSize, gridSize, gridSize),
+          );
+        }
+        if (char === "p") {
+          this.player = new Player(
+            this,
+            x * gridSize,
+            y * gridSize,
+            gridSize,
+            gridSize,
+          );
+        }
+      }
+    }
+  }
+  addEntity(entity: Entity) {
     this.entities.push(entity);
   }
   mapToCanvas(x: number, y: number) {
@@ -44,29 +125,25 @@ export class Arena {
     this.canvas.ctx.fillStyle = color;
     this.canvas.ctx.fillRect(...this.mapToCanvas(x, y), width, height);
   }
+  fillCircle(x: number, y: number, radius: number, color = "black") {
+    this.canvas.ctx.beginPath();
+    this.canvas.ctx.fillStyle = color;
+    this.canvas.ctx.arc(
+      ...this.mapToCanvas(x + radius, y + radius),
+      radius,
+      0,
+      Math.PI * 2,
+    );
+    this.canvas.ctx.fill();
+  }
   fillText(text: string, x: number, y: number, color = "black") {
     this.canvas.ctx.fillStyle = color;
     this.canvas.ctx.fillText(text, ...this.mapToCanvas(x, y));
   }
   draw() {
-    // borders
-    this.fillRect(0, 0, this.width, 48); // top
-    this.fillRect(0, this.height - 48, this.width, 48); // bottom
-    this.fillRect(0, 0, 48, this.height); // left
-    this.fillRect(this.width - 48, 0, 48, this.height); // right
-
-    this.fillRect(1000, 1000, 48, 48); // left
-
-    for (let i = 0; i < this.width; i += 48) {
-      this.fillRect(i, 0, 1, this.height);
+    for (const entity of this.entities) {
+      entity.draw(this);
     }
-    for (let i = 0; i < this.height; i += 48) {
-      this.fillRect(0, i, this.width, 1);
-    }
-
     this.player.draw();
-    // for (const entity of this.entities) {
-    //   entity.draw(ctx);
-    // }
   }
 }
