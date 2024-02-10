@@ -1,4 +1,5 @@
 import type { Arena } from "./Arena";
+import { colors } from "./colors";
 
 export class Player {
   arena: Arena;
@@ -62,18 +63,18 @@ export class Player {
     this.x = this.x + this.vx;
     this.y = this.y + this.vy;
 
-    this.arena.fillCircle(this.x, this.y, this.width / 2, "red");
-    this.arena.fillText(
-      Math.round(this.x).toString(),
-      this.x + 5,
-      this.y + 20,
-      "white",
-    );
-    this.arena.fillText(
-      Math.round(this.y).toString(),
-      this.x + 5,
-      this.y + 30,
-      "white",
-    );
+    this.arena.fillCircle(this.x, this.y, this.width / 2, colors.player);
+    // this.arena.fillText(
+    //   Math.round(this.x).toString(),
+    //   this.x + 5,
+    //   this.y + 20,
+    //   "white",
+    // );
+    // this.arena.fillText(
+    //   Math.round(this.y).toString(),
+    //   this.x + 5,
+    //   this.y + 30,
+    //   "white",
+    // );
   }
 }

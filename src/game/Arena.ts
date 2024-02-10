@@ -1,7 +1,9 @@
 import { Canvas } from "./Canvas";
 import type { Entity } from "./Entity";
+import { RandomPolygon } from "./FloorNoise";
 import { Player } from "./Player";
 import { Wall } from "./Wall";
+import { colors } from "./colors";
 import { clamp } from "./utils";
 // 1920 x 1920
 interface ArenaConfig {
@@ -14,12 +16,7 @@ const defaultConfig: ArenaConfig = {
   width: 1920,
   height: 1920,
   layout: `
-########################################
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#      p                               #
+##################   ###################
 #                                      #
 #                                      #
 #                                      #
@@ -34,6 +31,13 @@ const defaultConfig: ArenaConfig = {
 #                                      #
 #                                      #
 #                                      #
+#              #       #               #
+#                                      #
+#                                      #
+#                  p                   #
+#                      #               #
+#                      #               #
+#              #      ##               #
 #                                      #
 #                                      #
 #                                      #
@@ -51,9 +55,7 @@ const defaultConfig: ArenaConfig = {
 #                                      #
 #                                      #
 #                                      #
-#                                      #
-#                                      #
-########################################
+##################   ###################
 `,
 };
 
@@ -65,6 +67,8 @@ export class Arena {
   entities: Entity[];
   player!: Player;
   canvas: Canvas;
+  floorNoisePolygons: RandomPolygon[] = [];
+
   constructor(canvas: Canvas, width: number, height: number) {
     this.width = width;
     this.height = height;
@@ -72,6 +76,9 @@ export class Arena {
     this.parseLayout(defaultConfig.layout);
 
     this.canvas = canvas;
+    for (let i = 0; i < 100; i++) {
+      this.floorNoisePolygons.push(new RandomPolygon(width, height));
+    }
     this.repaint();
   }
   repaint = () => {
@@ -120,12 +127,31 @@ export class Arena {
     y: number,
     width: number,
     height: number,
-    color = "black",
+    color = colors.defaultColor,
   ) {
     this.canvas.ctx.fillStyle = color;
     this.canvas.ctx.fillRect(...this.mapToCanvas(x, y), width, height);
   }
-  fillCircle(x: number, y: number, radius: number, color = "black") {
+  roundRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+    color = colors.defaultColor,
+  ) {
+    this.canvas.ctx.fillStyle = color;
+    this.canvas.ctx.beginPath();
+    this.canvas.ctx.roundRect(...this.mapToCanvas(x, y), width, height, radius);
+    this.canvas.ctx.fill();
+    this.canvas.ctx.stroke();
+  }
+  fillCircle(
+    x: number,
+    y: number,
+    radius: number,
+    color = colors.defaultColor,
+  ) {
     this.canvas.ctx.beginPath();
     this.canvas.ctx.fillStyle = color;
     this.canvas.ctx.arc(
@@ -141,6 +167,9 @@ export class Arena {
     this.canvas.ctx.fillText(text, ...this.mapToCanvas(x, y));
   }
   draw() {
+    for (const polygon of this.floorNoisePolygons) {
+      polygon.draw(this.canvas.ctx, this.mapToCanvas.bind(this));
+    }
     for (const entity of this.entities) {
       entity.draw(this);
     }

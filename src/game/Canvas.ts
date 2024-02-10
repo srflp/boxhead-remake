@@ -1,3 +1,5 @@
+import { colors } from "./colors";
+
 export class Canvas {
   width: number;
   height: number;
@@ -44,10 +46,8 @@ export class Canvas {
   focus() {
     this.canvas.focus();
   }
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.clearRect(0, 0, this.width, this.height);
-  }
   clear() {
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.fillStyle = colors.bgFloor;
+    this.ctx.fillRect(0, 0, this.width, this.height);
   }
 }
