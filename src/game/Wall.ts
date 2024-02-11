@@ -8,6 +8,6 @@ export class Wall extends Entity {
   }
   draw(arena: Arena) {
     arena.canvas.ctx.beginPath();
-    arena.roundRect(this.x, this.y, this.width, this.height, 10, colors.wall);
+    arena.roundRect(this.x, this.y, this.width, this.height, 4, colors.wall);
   }
 }

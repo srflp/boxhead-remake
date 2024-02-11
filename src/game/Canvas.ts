@@ -6,7 +6,17 @@ export class Canvas {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   keysPressed: Set<string> = new Set();
-  keysObserved: Set<string> = new Set(["a", "w", "s", "d"]);
+  keysObserved: Set<string> = new Set([
+    "a",
+    "w",
+    "s",
+    "d",
+    "ArrowLeft",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowRight",
+    " ",
+  ]);
 
   constructor(selector: string, width: number, height: number) {
     this.width = width;

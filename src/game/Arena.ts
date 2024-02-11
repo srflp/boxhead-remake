@@ -59,8 +59,6 @@ const defaultConfig: ArenaConfig = {
 `,
 };
 
-const gridSize = 48;
-
 export class Arena {
   width: number;
   height: number;
@@ -68,12 +66,14 @@ export class Arena {
   player!: Player;
   canvas: Canvas;
   floorNoisePolygons: RandomPolygon[] = [];
+  gridSize: number = 48;
+  layout: string[] = defaultConfig.layout.trim().split("\n");
 
   constructor(canvas: Canvas, width: number, height: number) {
     this.width = width;
     this.height = height;
     this.entities = [];
-    this.parseLayout(defaultConfig.layout);
+    this.parseLayout();
 
     this.canvas = canvas;
     for (let i = 0; i < 100; i++) {
@@ -86,24 +86,28 @@ export class Arena {
     this.draw();
     requestAnimationFrame(this.repaint);
   };
-  parseLayout(layout: string) {
-    const lines = defaultConfig.layout.trim().split("\n");
-    for (let y = 0; y < lines.length; y++) {
-      const line = lines[y];
+  parseLayout() {
+    for (let y = 0; y < this.layout.length; y++) {
+      const line = this.layout[y];
       for (let x = 0; x < line.length; x++) {
         const char = line[x];
         if (char === "#") {
           this.addEntity(
-            new Wall(x * gridSize, y * gridSize, gridSize, gridSize),
+            new Wall(
+              x * this.gridSize,
+              y * this.gridSize,
+              this.gridSize,
+              this.gridSize,
+            ),
           );
         }
         if (char === "p") {
           this.player = new Player(
             this,
-            x * gridSize,
-            y * gridSize,
-            gridSize,
-            gridSize,
+            x * this.gridSize,
+            y * this.gridSize,
+            this.gridSize,
+            this.gridSize,
           );
         }
       }
