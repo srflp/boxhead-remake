@@ -1,6 +1,10 @@
 import type { Arena } from "./Arena";
 import { clamp, throttle } from "./utils";
 import { colors } from "./colors";
+import { bresenham } from "./bresenham";
+import { lineRayIntersectionPoint } from "./line";
+import { Vector2 } from "./primitives/Vector2";
+import { BulletPath } from "./BulletPath";
 
 export class Player {
   arena: Arena;
@@ -10,9 +14,10 @@ export class Player {
   height: number;
   vx: number = 0;
   vy: number = 0;
-  orientationX: number = 1;
-  orientationY: number = 0;
-  tryToShoot = throttle(this.shoot, 500);
+
+  orientationX: number = 1; // -1 | 0 | 1
+  orientationY: number = 0; // -1 | 0 | 1
+  tryToShoot = throttle(this.shoot, 180);
 
   constructor(
     arena: Arena,
@@ -51,25 +56,29 @@ export class Player {
   set cy(cy: number) {
     this.y = cy - this.height / 2;
   }
-  updateVelocity() {
+  updateVelocity(delta: number) {
     const { keysPressed } = this.arena.canvas;
-    const speed = 4;
+    const speed = 0.2;
     this.vx = 0;
     this.vy = 0;
     let anyPressed = false;
-    if (keysPressed.has("a") || keysPressed.has("ArrowLeft")) {
+    const left = keysPressed.has("a") || keysPressed.has("ArrowLeft");
+    const right = keysPressed.has("d") || keysPressed.has("ArrowRight");
+    const up = keysPressed.has("w") || keysPressed.has("ArrowUp");
+    const down = keysPressed.has("s") || keysPressed.has("ArrowDown");
+    if (left && !right) {
       this.vx = -speed;
       anyPressed = true;
     }
-    if (keysPressed.has("d") || keysPressed.has("ArrowRight")) {
+    if (right && !left) {
       this.vx = speed;
       anyPressed = true;
     }
-    if (keysPressed.has("w") || keysPressed.has("ArrowUp")) {
+    if (up && !down) {
       this.vy = -speed;
       anyPressed = true;
     }
-    if (keysPressed.has("s") || keysPressed.has("ArrowDown")) {
+    if (down && !up) {
       this.vy = speed;
       anyPressed = true;
     }
@@ -82,36 +91,82 @@ export class Player {
       this.vx = this.vx / sqrt2;
       this.vy = this.vy / sqrt2;
     }
-    if (keysPressed.has(" ")) {
-      this.tryToShoot();
-    }
+    this.vx *= delta;
+    this.vy *= delta;
   }
   shoot() {
-    console.log("shot");
-    this.arena.fillRect(this.x, this.y, 48 * 3, 48 * 3, "rgba(0,0,0,0.5)");
+    let shotEdgeIntersection = null;
+    for (const edge of this.arena.edges) {
+      let intersection = lineRayIntersectionPoint(
+        new Vector2(this.cx, this.cy),
+        new Vector2(this.orientationX, this.orientationY),
+        edge[0],
+        edge[1],
+      );
+      if (intersection) {
+        shotEdgeIntersection = intersection;
+        break;
+      }
+    }
+    let shotEnd: Vector2 | null = null;
+    bresenham(
+      this.cx,
+      this.cy,
+      shotEdgeIntersection!.x,
+      shotEdgeIntersection!.y,
+      (x, y) => {
+        const cellX = Math.floor(
+          clamp(x - 1, 0, this.arena.width) / this.arena.gridSize,
+        );
+        const cellY = Math.floor(
+          clamp(y - 1, 0, this.arena.height) / this.arena.gridSize,
+        );
+        if (this.arena.layout[cellY][cellX] === "#") {
+          shotEnd = new Vector2(x, y);
+          return true;
+        }
+      },
+    );
+    const normalPart = 1 / Math.hypot(this.orientationX, this.orientationY);
+    this.arena.addBulletPath(
+      new BulletPath(
+        new Vector2(
+          this.cx + (this.width / 2) * this.orientationX * normalPart,
+          this.cy + (this.width / 2) * this.orientationY * normalPart,
+        ),
+        new Vector2(
+          (shotEnd ?? shotEdgeIntersection)?.x || 0,
+          (shotEnd ?? shotEdgeIntersection)?.y || 0,
+        ),
+        "red",
+        50,
+      ),
+    );
   }
-  draw() {
-    this.updateVelocity();
+  updatePosition(delta: number) {
+    this.updateVelocity(delta);
 
     let potentialCx = this.x + this.vx + this.width / 2;
     let potentialCy = this.y + this.vy + this.width / 2;
 
+    // tile the player is currently on (was, one the previous frame)
+    const tileXPrev = Math.floor(this.cx / this.arena.gridSize);
+    const tileYPrev = Math.floor(this.cy / this.arena.gridSize);
+
     this.x = this.x + this.vx;
     this.y = this.y + this.vy;
 
-    // handle collisions with walls
-    const startX = Math.floor(this.cx / this.arena.gridSize);
-    const startY = Math.floor(this.cy / this.arena.gridSize);
+    // handle player collisions with walls
     const checkDepth = 1;
     for (
-      let y = Math.max(0, startY - checkDepth);
-      y <= Math.min(startY + checkDepth, this.arena.layout.length - 1);
+      let y = Math.max(0, tileYPrev - checkDepth);
+      y <= Math.min(tileYPrev + checkDepth, this.arena.layout.length - 1);
       y++
     ) {
       const line = this.arena.layout[y];
       for (
-        let x = Math.max(0, startX - checkDepth);
-        x <= Math.min(startX + checkDepth, line.length - 1);
+        let x = Math.max(0, tileXPrev - checkDepth);
+        x <= Math.min(tileXPrev + checkDepth, line.length - 1);
         x++
       ) {
         const char = line[x];
@@ -144,31 +199,23 @@ export class Player {
             this.cx = potentialCx;
             this.cy = potentialCy;
           }
-
-          // this.arena.fillCircle(nearestX - 4, nearestY - 4, 4, "blue");
         }
       }
     }
-
-    // this.arena.fillRect(
-    //   (startX - 1) * this.arena.gridSize,
-    //   (startY - 1) * this.arena.gridSize,
-    //   48 * 3,
-    //   48 * 3,
-    //   "rgba(0,0,0,0.5)",
-    // );
-
+  }
+  draw() {
+    // player's circle
     this.arena.fillCircle(this.x, this.y, this.width / 2, colors.player);
 
-    // debug - velocity indicator
+    // debug: velocity indicator
     // this.arena.fillText(
-    //   Math.round(this.vx).toString(),
+    //   Math.round(this.vx * 100).toString(),
     //   this.x + 5,
     //   this.y + 20,
     //   "white",
     // );
     // this.arena.fillText(
-    //   Math.round(this.vy).toString(),
+    //   Math.round(this.vy * 100).toString(),
     //   this.x + 5,
     //   this.y + 30,
     //   "white",
@@ -182,5 +229,10 @@ export class Player {
       4,
       "white",
     );
+
+    // debug: shooting line
+    if (this.arena.canvas.keysPressed.has(" ")) {
+      this.tryToShoot();
+    }
   }
 }

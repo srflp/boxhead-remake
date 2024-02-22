@@ -52,6 +52,10 @@ export class Canvas {
       if (!this.keysObserved.has(e.key)) return;
       this.keysPressed.delete(e.key);
     });
+
+    canvas.addEventListener("blur", (e) => {
+      this.keysPressed.clear();
+    });
   }
   focus() {
     this.canvas.focus();

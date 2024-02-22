@@ -8,6 +8,7 @@ export class Wall extends Entity {
   }
   draw(arena: Arena) {
     arena.canvas.ctx.beginPath();
+    arena.canvas.ctx.strokeStyle = "black";
     arena.roundRect(this.x, this.y, this.width, this.height, 4, colors.wall);
   }
 }
