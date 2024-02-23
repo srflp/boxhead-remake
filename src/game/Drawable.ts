@@ -1,5 +1,5 @@
-import type { Arena } from "./Arena";
+import type { Canvas } from "./Canvas";
 
 export abstract class Drawable {
-  public abstract draw(arena: Arena): void;
+  public abstract draw(canvas: Canvas): void;
 }

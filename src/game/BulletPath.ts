@@ -1,4 +1,4 @@
-import type { Arena } from "./Arena";
+import type { Canvas } from "./Canvas";
 import type { Vector2 } from "./primitives/Vector2";
 
 export class BulletPath {
@@ -12,7 +12,7 @@ export class BulletPath {
   hasExpired() {
     return new Date().getTime() - this.launchedAt.getTime() > this.duration;
   }
-  draw(arena: Arena) {
-    arena.drawLine(this.start.x, this.start.y, this.end.x, this.end.y, "red");
+  draw(canvas: Canvas) {
+    canvas.drawLine(this.start.x, this.start.y, this.end.x, this.end.y, "red");
   }
 }

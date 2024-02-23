@@ -5,8 +5,10 @@ import { bresenham } from "./bresenham";
 import { lineRayIntersectionPoint } from "./line";
 import { Vector2 } from "./primitives/Vector2";
 import { BulletPath } from "./BulletPath";
+import { Drawable } from "./Drawable";
+import type { Canvas } from "./Canvas";
 
-export class Player {
+export class Player extends Drawable {
   arena: Arena;
   #x: number;
   #y: number;
@@ -25,6 +27,7 @@ export class Player {
     width: number,
     height: number,
   ) {
+    super();
     this.arena = arena;
     this.#x = x;
     this.#y = y;
@@ -143,7 +146,7 @@ export class Player {
     );
     this.arena.playSound("weapon-pistol-fire");
   }
-  updatePosition(delta: number) {
+  update(delta: number) {
     this.updateVelocity(delta);
 
     let potentialCx = this.x + this.vx + this.width / 2;
@@ -202,37 +205,22 @@ export class Player {
         }
       }
     }
-  }
-  draw() {
-    // player's circle
-    this.arena.fillCircle(this.x, this.y, this.width / 2, colors.player);
 
-    // debug: velocity indicator
-    // this.arena.fillText(
-    //   Math.round(this.vx * 100).toString(),
-    //   this.x + 5,
-    //   this.y + 20,
-    //   "white",
-    // );
-    // this.arena.fillText(
-    //   Math.round(this.vy * 100).toString(),
-    //   this.x + 5,
-    //   this.y + 30,
-    //   "white",
-    // );
+    if (this.arena.canvas.keysPressed.has(" ")) {
+      this.tryToShoot();
+    }
+  }
+  draw(canvas: Canvas) {
+    // player's circle
+    canvas.fillCircle(this.x, this.y, this.width / 2, colors.player);
 
     // orientation indicator
     const normalPart = 1 / Math.hypot(this.orientationX, this.orientationY);
-    this.arena.fillCircle(
+    canvas.fillCircle(
       this.cx + (this.width / 2 - 4) * this.orientationX * normalPart - 4,
       this.cy + (this.width / 2 - 4) * this.orientationY * normalPart - 4,
       4,
       "white",
     );
-
-    // debug: shooting line
-    if (this.arena.canvas.keysPressed.has(" ")) {
-      this.tryToShoot();
-    }
   }
 }

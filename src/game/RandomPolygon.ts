@@ -1,4 +1,4 @@
-import type { Arena } from "./Arena";
+import type { Canvas } from "./Canvas";
 import { Drawable } from "./Drawable";
 import { colors } from "./colors";
 import { Vector2 } from "./primitives/Vector2";
@@ -29,7 +29,7 @@ export class RandomPolygon extends Drawable {
     }
   }
 
-  draw(arena: Arena) {
-    arena.drawPolygon(this.points, colors.bgFloorNoise);
+  draw(canvas: Canvas) {
+    canvas.fillPolygon(this.points, colors.bgFloorNoise);
   }
 }

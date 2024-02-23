@@ -4,7 +4,6 @@ import type { Entity } from "./Entity";
 import { RandomPolygon } from "./RandomPolygon";
 import { Player } from "./Player";
 import { Wall } from "./Wall";
-import { colors } from "./colors";
 import { Vector2 } from "./primitives/Vector2";
 import { loadSound, playSound } from "./sound";
 import { clamp } from "./utils";
@@ -87,8 +86,8 @@ export class Arena {
     this.entities = [];
     this.parseLayout();
     this.loadSounds();
-
     this.canvas = canvas;
+    this.canvas.coordsMapper = this.mapToCanvas.bind(this);
     for (let i = 0; i < 100; i++) {
       this.floorNoisePolygons.push(new RandomPolygon(width, height));
     }
@@ -160,7 +159,7 @@ export class Arena {
   addBulletPath(bulletPath: BulletPath) {
     this.bulletPaths.push(bulletPath);
   }
-  mapToCanvas(x: number, y: number) {
+  mapToCanvas = (x: number, y: number): [number, number] => {
     let viewportX = this.player.x - (this.canvas.width - this.player.width) / 2;
     let viewportY =
       this.player.y - (this.canvas.height - this.player.height) / 2;
@@ -168,71 +167,10 @@ export class Arena {
     viewportY = clamp(viewportY, 0, this.height - this.canvas.height);
     let canvasX = x - viewportX;
     let canvasY = y - viewportY;
-    return [canvasX, canvasY] as const;
-  }
-  fillRect(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    color = colors.defaultColor,
-  ) {
-    this.canvas.ctx.fillStyle = color;
-    this.canvas.ctx.fillRect(...this.mapToCanvas(x, y), width, height);
-  }
-  roundRect(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    radius: number,
-    color = colors.defaultColor,
-  ) {
-    this.canvas.ctx.fillStyle = color;
-    this.canvas.ctx.beginPath();
-    this.canvas.ctx.roundRect(...this.mapToCanvas(x, y), width, height, radius);
-    this.canvas.ctx.fill();
-    this.canvas.ctx.stroke();
-  }
-  fillCircle(
-    x: number,
-    y: number,
-    radius: number,
-    color = colors.defaultColor,
-  ) {
-    this.canvas.ctx.beginPath();
-    this.canvas.ctx.fillStyle = color;
-    this.canvas.ctx.arc(
-      ...this.mapToCanvas(x + radius, y + radius),
-      radius,
-      0,
-      Math.PI * 2,
-    );
-    this.canvas.ctx.fill();
-  }
-  fillText(text: string, x: number, y: number, color = "black") {
-    this.canvas.ctx.fillStyle = color;
-    this.canvas.ctx.fillText(text, ...this.mapToCanvas(x, y));
-  }
-  drawLine(x1: number, y1: number, x2: number, y2: number, color = "black") {
-    this.canvas.ctx.strokeStyle = color;
-    this.canvas.ctx.beginPath();
-    this.canvas.ctx.moveTo(...this.mapToCanvas(x1, y1));
-    this.canvas.ctx.lineTo(...this.mapToCanvas(x2, y2));
-    this.canvas.ctx.stroke();
-  }
-  drawPolygon(points: Vector2[], color = colors.bgFloorNoise) {
-    this.canvas.ctx.fillStyle = color;
-    this.canvas.ctx.beginPath();
-    this.canvas.ctx.moveTo(...this.mapToCanvas(points[0].x, points[0].y));
-    for (let i = 1; i < points.length; i++) {
-      this.canvas.ctx.lineTo(...this.mapToCanvas(points[i].x, points[i].y));
-    }
-    this.canvas.ctx.closePath();
-    this.canvas.ctx.fill();
-  }
+    return [canvasX, canvasY];
+  };
   update(delta: number) {
-    this.player.updatePosition(delta);
+    this.player.update(delta);
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {
         this.bulletPaths.splice(this.bulletPaths.indexOf(bulletPath), 1);
@@ -242,10 +180,10 @@ export class Arena {
   }
   draw() {
     this.canvas.clear();
-    for (const polygon of this.floorNoisePolygons) polygon.draw(this);
-    for (const entity of this.entities) entity.draw(this);
-    for (const bulletPath of this.bulletPaths) bulletPath.draw(this);
-    this.player.draw();
+    for (const polygon of this.floorNoisePolygons) polygon.draw(this.canvas);
+    for (const entity of this.entities) entity.draw(this.canvas);
+    for (const bulletPath of this.bulletPaths) bulletPath.draw(this.canvas);
+    this.player.draw(this.canvas);
   }
   get edges(): [Vector2, Vector2][] {
     return [
