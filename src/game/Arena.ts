@@ -7,6 +7,7 @@ import { Wall } from "./Wall";
 import { Vector2 } from "./primitives/Vector2";
 import { loadSound, playSound } from "./sound";
 import { clamp } from "./utils";
+import { Enemy } from "./Enemy";
 
 // 1920 x 1920
 interface ArenaConfig {
@@ -20,7 +21,7 @@ const defaultConfig: ArenaConfig = {
   height: 1920,
   layout: `
 ##################   ###################
-#                                      #
+#                 eee                  #
 #                                      #
 #                                      #
 #                                      #
@@ -39,7 +40,7 @@ const defaultConfig: ArenaConfig = {
 #                                      #
 #                  p                   #
 #                                      #
-#                                      #
+#                 ###                  #
 #              ##      ##              #
 #                                      #
 #                                      #
@@ -65,7 +66,9 @@ const defaultConfig: ArenaConfig = {
 export class Arena {
   width: number;
   height: number;
-  entities: Entity[];
+  size: Vector2;
+  entities: Entity[] = [];
+  enemies: Enemy[] = [];
   bulletPaths: BulletPath[] = [];
   player!: Player;
   canvas: Canvas;
@@ -83,7 +86,7 @@ export class Arena {
   constructor(canvas: Canvas, width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.entities = [];
+    this.size = new Vector2(width, height);
     this.parseLayout();
     this.loadSounds();
     this.canvas = canvas;
@@ -147,7 +150,16 @@ export class Arena {
             x * this.gridSize,
             y * this.gridSize,
             this.gridSize,
-            this.gridSize,
+          );
+        }
+        if (char === "e") {
+          this.enemies.push(
+            new Enemy(
+              this,
+              x * this.gridSize,
+              y * this.gridSize,
+              this.gridSize,
+            ),
           );
         }
       }
@@ -160,9 +172,8 @@ export class Arena {
     this.bulletPaths.push(bulletPath);
   }
   mapToCanvas = (x: number, y: number): [number, number] => {
-    let viewportX = this.player.x - (this.canvas.width - this.player.width) / 2;
-    let viewportY =
-      this.player.y - (this.canvas.height - this.player.height) / 2;
+    let viewportX = this.player.x - (this.canvas.width - this.player.size) / 2;
+    let viewportY = this.player.y - (this.canvas.height - this.player.size) / 2;
     viewportX = clamp(viewportX, 0, this.width - this.canvas.width);
     viewportY = clamp(viewportY, 0, this.height - this.canvas.height);
     let canvasX = x - viewportX;
@@ -171,6 +182,7 @@ export class Arena {
   };
   update(delta: number) {
     this.player.update(delta);
+    for (const enemy of this.enemies) enemy.update(delta);
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {
         this.bulletPaths.splice(this.bulletPaths.indexOf(bulletPath), 1);
@@ -182,6 +194,7 @@ export class Arena {
     this.canvas.clear();
     for (const polygon of this.floorNoisePolygons) polygon.draw(this.canvas);
     for (const entity of this.entities) entity.draw(this.canvas);
+    for (const enemy of this.enemies) enemy.draw(this.canvas);
     for (const bulletPath of this.bulletPaths) bulletPath.draw(this.canvas);
     this.player.draw(this.canvas);
   }

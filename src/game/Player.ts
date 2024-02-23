@@ -10,98 +10,89 @@ import type { Canvas } from "./Canvas";
 
 export class Player extends Drawable {
   arena: Arena;
-  #x: number;
-  #y: number;
-  width: number;
-  height: number;
-  vx: number = 0;
-  vy: number = 0;
-  orientationX: number = 1; // -1 | 0 | 1
-  orientationY: number = 0; // -1 | 0 | 1
+  position: Vector2;
+  velocity: Vector2;
+  orientation: Vector2;
+  size: number;
   tryToShoot = throttle(this.shoot, () => getRandomIntInclusive(250, 350));
 
-  constructor(
-    arena: Arena,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ) {
+  constructor(arena: Arena, x: number, y: number, size: number) {
     super();
     this.arena = arena;
-    this.#x = x;
-    this.#y = y;
-    this.width = width;
-    this.height = height;
+    this.position = new Vector2(x, y);
+    this.velocity = new Vector2(0, 0);
+    this.orientation = new Vector2(0, 1);
+    this.size = size;
   }
   get x() {
-    return this.#x;
+    return this.position.x;
   }
   get y() {
-    return this.#y;
+    return this.position.y;
+  }
+  get r() {
+    return this.size / 2;
   }
   get cx() {
-    return this.x + this.width / 2;
+    return this.x + this.r;
   }
   get cy() {
-    return this.y + this.height / 2;
+    return this.y + this.r;
   }
   set x(x: number) {
-    this.#x = Math.max(0, Math.min(x, this.arena.width - this.width));
+    this.position.x = Math.max(0, Math.min(x, this.arena.width - this.size));
   }
   set y(y: number) {
-    this.#y = Math.max(0, Math.min(y, this.arena.height - this.height));
+    this.position.y = Math.max(0, Math.min(y, this.arena.height - this.size));
   }
   set cx(cx: number) {
-    this.x = cx - this.width / 2;
+    this.x = cx - this.r;
   }
   set cy(cy: number) {
-    this.y = cy - this.height / 2;
+    this.y = cy - this.r;
   }
   updateVelocity(delta: number) {
     const { keysPressed } = this.arena.canvas;
     const speed = 0.2;
-    this.vx = 0;
-    this.vy = 0;
+    this.velocity.set(0, 0);
     let anyPressed = false;
     const left = keysPressed.has("a") || keysPressed.has("ArrowLeft");
     const right = keysPressed.has("d") || keysPressed.has("ArrowRight");
     const up = keysPressed.has("w") || keysPressed.has("ArrowUp");
     const down = keysPressed.has("s") || keysPressed.has("ArrowDown");
     if (left && !right) {
-      this.vx = -speed;
+      this.velocity.x = -speed;
       anyPressed = true;
     }
     if (right && !left) {
-      this.vx = speed;
+      this.velocity.x = speed;
       anyPressed = true;
     }
     if (up && !down) {
-      this.vy = -speed;
+      this.velocity.y = -speed;
       anyPressed = true;
     }
     if (down && !up) {
-      this.vy = speed;
+      this.velocity.y = speed;
       anyPressed = true;
     }
     if (anyPressed) {
-      this.orientationX = this.vx / (Math.abs(this.vx) || 1);
-      this.orientationY = this.vy / (Math.abs(this.vy) || 1);
+      this.orientation.set(
+        this.velocity.x / (Math.abs(this.velocity.x) || 1),
+        this.velocity.y / (Math.abs(this.velocity.y) || 1),
+      );
     }
-    const sqrt2 = Math.sqrt(2);
-    if (this.vx && this.vy) {
-      this.vx = this.vx / sqrt2;
-      this.vy = this.vy / sqrt2;
+    if (this.velocity.x && this.velocity.y) {
+      this.velocity.divideScalar(Math.sqrt(2));
     }
-    this.vx *= delta;
-    this.vy *= delta;
+    this.velocity.multiplyScalar(delta);
   }
   shoot() {
     let shotEdgeIntersection = null;
     for (const edge of this.arena.edges) {
       let intersection = lineRayIntersectionPoint(
         new Vector2(this.cx, this.cy),
-        new Vector2(this.orientationX, this.orientationY),
+        this.orientation,
         edge[0],
         edge[1],
       );
@@ -129,12 +120,12 @@ export class Player extends Drawable {
         }
       },
     );
-    const normalPart = 1 / Math.hypot(this.orientationX, this.orientationY);
+    const orientationNormalized = this.orientation.clone().normalize();
     this.arena.addBulletPath(
       new BulletPath(
         new Vector2(
-          this.cx + (this.width / 2) * this.orientationX * normalPart,
-          this.cy + (this.width / 2) * this.orientationY * normalPart,
+          this.cx + this.r * orientationNormalized.x,
+          this.cy + this.r * orientationNormalized.y,
         ),
         new Vector2(
           (shotEnd ?? shotEdgeIntersection)?.x || 0,
@@ -149,78 +140,64 @@ export class Player extends Drawable {
   update(delta: number) {
     this.updateVelocity(delta);
 
-    let potentialCx = this.x + this.vx + this.width / 2;
-    let potentialCy = this.y + this.vy + this.width / 2;
+    let potentialC = this.position.clone().add(this.velocity).addScalar(this.r);
 
-    // tile the player is currently on (was, one the previous frame)
-    const tileXPrev = Math.floor(this.cx / this.arena.gridSize);
-    const tileYPrev = Math.floor(this.cy / this.arena.gridSize);
+    // tile the player is currently on (was, on the previous frame)
+    const tilePrev = this.position
+      .clone()
+      .addScalar(this.r)
+      .divideScalar(this.arena.gridSize)
+      .floor();
 
-    this.x = this.x + this.vx;
-    this.y = this.y + this.vy;
+    this.position
+      .add(this.velocity)
+      .clamp(
+        new Vector2(0, 0),
+        this.arena.size.clone().subtractScalar(this.size),
+      );
 
     // handle player collisions with walls
-    const checkDepth = 1;
-    for (
-      let y = Math.max(0, tileYPrev - checkDepth);
-      y <= Math.min(tileYPrev + checkDepth, this.arena.layout.length - 1);
-      y++
-    ) {
-      const line = this.arena.layout[y];
-      for (
-        let x = Math.max(0, tileXPrev - checkDepth);
-        x <= Math.min(tileXPrev + checkDepth, line.length - 1);
-        x++
-      ) {
-        const char = line[x];
-        if (char === "#") {
-          const realX = x * this.arena.gridSize;
-          const realY = y * this.arena.gridSize;
-
-          const nearestX = clamp(
-            potentialCx,
-            realX,
-            realX + this.arena.gridSize,
-          );
-          const nearestY = clamp(
-            potentialCy,
-            realY,
-            realY + this.arena.gridSize,
-          );
-
-          const deltaX = nearestX - potentialCx;
-          const deltaY = nearestY - potentialCy;
-
-          const dist = Math.hypot(deltaX, deltaY);
-          const overlap = this.width / 2 - dist;
-
+    const cell = new Vector2(0, 0);
+    const cellTL = tilePrev.clone().subtractScalar(1).maxScalar(0);
+    const cellBR = tilePrev.clone().addScalar(1).min(this.arena.size);
+    for (cell.y = cellTL.y; cell.y <= cellBR.y; cell.y++) {
+      const line = this.arena.layout[cell.y];
+      for (cell.x = cellTL.x; cell.x <= cellBR.x; cell.x++) {
+        if (line[cell.x] === "#") {
+          const cellCoords = cell.clone().multiplyScalar(this.arena.gridSize);
+          const nearest = potentialC
+            .clone()
+            .clamp(
+              cellCoords,
+              cellCoords.clone().addScalar(this.arena.gridSize),
+            );
+          const delta = nearest.subtract(potentialC);
+          const dist = delta.length();
+          const overlap = this.r - dist;
           if (overlap > 0) {
-            potentialCx = potentialCx - (deltaX / dist) * overlap;
-            potentialCy = potentialCy - (deltaY / dist) * overlap;
-
+            potentialC.subtract(delta.normalize().multiplyScalar(overlap));
             // correcting the player's position in case of collision
-            this.cx = potentialCx;
-            this.cy = potentialCy;
+            this.position = potentialC.clone().subtractScalar(this.r);
           }
         }
       }
     }
-
-    if (this.arena.canvas.keysPressed.has(" ")) {
-      this.tryToShoot();
-    }
+    if (this.arena.canvas.keysPressed.has(" ")) this.tryToShoot();
   }
   draw(canvas: Canvas) {
     // player's circle
-    canvas.fillCircle(this.x, this.y, this.width / 2, colors.player);
+    canvas.fillCircle(this.x, this.y, this.r, colors.player);
 
     // orientation indicator
-    const normalPart = 1 / Math.hypot(this.orientationX, this.orientationY);
-    canvas.fillCircle(
-      this.cx + (this.width / 2 - 4) * this.orientationX * normalPart - 4,
-      this.cy + (this.width / 2 - 4) * this.orientationY * normalPart - 4,
-      4,
-      "white",
-    );
+    const orientationNormalized = this.orientation
+      .clone()
+      .normalize()
+      .multiplyScalar(this.r - 4);
+    const indicator = this.position
+      .clone()
+      .addScalar(this.r)
+      .add(orientationNormalized)
+      .subtractScalar(4);
+    canvas.fillCircle(indicator.x, indicator.y, 4, "white");
   }
 }
