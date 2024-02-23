@@ -61,7 +61,7 @@ export class Enemy extends Drawable {
 
     let potentialC = this.position.clone().add(this.velocity).addScalar(this.r);
 
-    // tile the player is currently on (was, on the previous frame)
+    // tile the enemy is currently on (was, on the previous frame)
     const tilePrev = this.position
       .clone()
       .addScalar(this.r)
@@ -75,7 +75,7 @@ export class Enemy extends Drawable {
         this.arena.size.clone().subtractScalar(this.size),
       );
 
-    // handle player collisions with walls
+    // handle enemy collisions with walls
     const cell = new Vector2(0, 0);
     const cellTL = tilePrev.clone().subtractScalar(1).maxScalar(0);
     const cellBR = tilePrev.clone().addScalar(1).min(this.arena.size);
@@ -99,6 +99,17 @@ export class Enemy extends Drawable {
             this.position = potentialC.clone().subtractScalar(this.r);
           }
         }
+      }
+    }
+    for (let enemy of [...this.arena.enemies, this.arena.player]) {
+      if (enemy === this) continue;
+      const enemyVector = new Vector2(enemy.cx, enemy.cy);
+      const delta = enemyVector.subtract(potentialC);
+      const dist = delta.length();
+      const overlap = 2 * this.r - dist;
+      if (overlap > 0) {
+        potentialC.subtract(delta.normalize().multiplyScalar(overlap / 2));
+        this.position = potentialC.clone().subtractScalar(this.r);
       }
     }
   }

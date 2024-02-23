@@ -21,9 +21,9 @@ const defaultConfig: ArenaConfig = {
   height: 1920,
   layout: `
 ##################   ###################
-#                 eee                  #
+#                 e e e                #
 #                                      #
-#                                      #
+#                  p                   #
 #                                      #
 #                                      #
 #                                      #
@@ -38,7 +38,7 @@ const defaultConfig: ArenaConfig = {
 #              ##       ##             #
 #                                      #
 #                                      #
-#                  p                   #
+#                                      #
 #                                      #
 #                 ###                  #
 #              ##      ##              #
