@@ -1,5 +1,5 @@
 import type { Arena } from "./Arena";
-import { clamp, throttle } from "./utils";
+import { clamp, getRandomIntInclusive, throttle } from "./utils";
 import { colors } from "./colors";
 import { bresenham } from "./bresenham";
 import { lineRayIntersectionPoint } from "./line";
@@ -14,10 +14,9 @@ export class Player {
   height: number;
   vx: number = 0;
   vy: number = 0;
-
   orientationX: number = 1; // -1 | 0 | 1
   orientationY: number = 0; // -1 | 0 | 1
-  tryToShoot = throttle(this.shoot, 180);
+  tryToShoot = throttle(this.shoot, () => getRandomIntInclusive(250, 350));
 
   constructor(
     arena: Arena,
@@ -142,6 +141,7 @@ export class Player {
         50,
       ),
     );
+    this.arena.playSound("weapon-pistol-fire");
   }
   updatePosition(delta: number) {
     this.updateVelocity(delta);

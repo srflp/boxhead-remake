@@ -6,7 +6,9 @@ import { Player } from "./Player";
 import { Wall } from "./Wall";
 import { colors } from "./colors";
 import { Vector2 } from "./primitives/Vector2";
+import { loadSound, playSound } from "./sound";
 import { clamp } from "./utils";
+
 // 1920 x 1920
 interface ArenaConfig {
   width: number;
@@ -71,6 +73,8 @@ export class Arena {
   floorNoisePolygons: RandomPolygon[] = [];
   gridSize: number = 48;
   layout: string[] = defaultConfig.layout.trim().split("\n");
+  soundNames = ["weapon-pistol-fire"] as const;
+  sounds: Record<string, AudioBuffer> = {};
 
   maxFPS = 60;
   lastFrameTimeMs = 0;
@@ -82,12 +86,26 @@ export class Arena {
     this.height = height;
     this.entities = [];
     this.parseLayout();
+    this.loadSounds();
 
     this.canvas = canvas;
     for (let i = 0; i < 100; i++) {
       this.floorNoisePolygons.push(new RandomPolygon(width, height));
     }
     requestAnimationFrame(this.repaint);
+  }
+  async loadSounds() {
+    const fetchedSounds = await Promise.all(
+      this.soundNames.map(
+        async (soundName) => await loadSound(`/sounds/${soundName}.mp3`),
+      ),
+    );
+    for (let i = 0; i < this.soundNames.length; i++) {
+      this.sounds[this.soundNames[i]] = fetchedSounds[i];
+    }
+  }
+  playSound(soundName: (typeof this.soundNames)[number]) {
+    playSound(this.sounds[soundName]);
   }
   repaint = (timestamp: DOMHighResTimeStamp = 0) => {
     if (timestamp < this.lastFrameTimeMs + 1000 / this.maxFPS) {
