@@ -1,7 +1,7 @@
 import type { BulletPath } from "./BulletPath";
 import { Canvas } from "./Canvas";
 import type { Entity } from "./Entity";
-import { RandomPolygon } from "./FloorNoise";
+import { RandomPolygon } from "./RandomPolygon";
 import { Player } from "./Player";
 import { Wall } from "./Wall";
 import { colors } from "./colors";
@@ -221,28 +221,30 @@ export class Arena {
     this.canvas.ctx.lineTo(...this.mapToCanvas(x2, y2));
     this.canvas.ctx.stroke();
   }
+  drawPolygon(points: Vector2[], color = colors.bgFloorNoise) {
+    this.canvas.ctx.fillStyle = color;
+    this.canvas.ctx.beginPath();
+    this.canvas.ctx.moveTo(...this.mapToCanvas(points[0].x, points[0].y));
+    for (let i = 1; i < points.length; i++) {
+      this.canvas.ctx.lineTo(...this.mapToCanvas(points[i].x, points[i].y));
+    }
+    this.canvas.ctx.closePath();
+    this.canvas.ctx.fill();
+  }
   update(delta: number) {
     this.player.updatePosition(delta);
-  }
-  draw() {
-    this.canvas.clear();
-
-    for (const polygon of this.floorNoisePolygons) {
-      polygon.draw(this.canvas.ctx, this.mapToCanvas.bind(this));
-    }
-
-    for (const entity of this.entities) {
-      entity.draw(this);
-    }
-
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {
         this.bulletPaths.splice(this.bulletPaths.indexOf(bulletPath), 1);
         continue;
       }
-      bulletPath.draw(this);
     }
-
+  }
+  draw() {
+    this.canvas.clear();
+    for (const polygon of this.floorNoisePolygons) polygon.draw(this);
+    for (const entity of this.entities) entity.draw(this);
+    for (const bulletPath of this.bulletPaths) bulletPath.draw(this);
     this.player.draw();
   }
   get edges(): [Vector2, Vector2][] {

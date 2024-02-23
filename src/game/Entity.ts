@@ -1,6 +1,6 @@
-import type { Arena } from "./Arena";
+import { Drawable } from "./Drawable";
 
-export class Entity {
+export abstract class Entity extends Drawable {
   x: number;
   y: number;
   width: number;
@@ -9,6 +9,7 @@ export class Entity {
   vy: number;
 
   constructor(x: number, y: number, width: number, height: number) {
+    super();
     this.x = x;
     this.y = y;
     this.width = width;
@@ -16,5 +17,4 @@ export class Entity {
     this.vx = 0;
     this.vy = 0;
   }
-  draw(arena: Arena) {}
 }
