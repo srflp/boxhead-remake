@@ -63,10 +63,8 @@ export class Canvas {
 
     canvas.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      this.mouseX = (e.clientX - rect.left) * scaleX;
-      this.mouseY = (e.clientY - rect.top) * scaleY;
+      this.mouseX = e.clientX - rect.left;
+      this.mouseY = e.clientY - rect.top;
     });
   }
   focus() {
@@ -81,7 +79,7 @@ export class Canvas {
     y: number,
     width: number,
     height: number,
-    color = colors.defaultColor,
+    color: string | CanvasGradient | CanvasPattern = colors.defaultColor,
   ) {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(...this.coordsMapper(x, y), width, height);
