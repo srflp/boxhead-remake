@@ -229,7 +229,7 @@ export class Arena {
       this.canvas.font = "48px serif";
       this.canvas.fillText(
         "Game over",
-        this.canvas.width / 2 - 100,
+        this.canvas.width / 2,
         this.canvas.height / 2,
       );
     }
