@@ -34,6 +34,16 @@ export class Vector2 {
     return this;
   }
 
+  distanceToSquared(vector: Vector2) {
+    const dx = this.x - vector.x;
+    const dy = this.y - vector.y;
+    return dx * dx + dy * dy;
+  }
+
+  distanceTo(vector: Vector2) {
+    return Math.sqrt(this.distanceToSquared(vector));
+  }
+
   floor() {
     this.x = Math.floor(this.x);
     this.y = Math.floor(this.y);
@@ -99,7 +109,11 @@ export class Vector2 {
   }
 
   length() {
-    return Math.hypot(this.x, this.y);
+    return Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+
+  lengthSquared() {
+    return this.x * this.x + this.y * this.y;
   }
 
   min(v: Vector2) {

@@ -188,7 +188,13 @@ export class Arena {
   };
   update(delta: number) {
     this.player.update(delta);
-    for (const enemy of this.enemies) enemy.update(delta);
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0) {
+        this.enemies.splice(this.enemies.indexOf(enemy), 1);
+        continue;
+      }
+      enemy.update(delta);
+    }
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {
         this.bulletPaths.splice(this.bulletPaths.indexOf(bulletPath), 1);

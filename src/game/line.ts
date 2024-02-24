@@ -80,3 +80,54 @@ export const lineRayIntersectionPoint = (
   }
   return null;
 };
+
+export const pointSegmentDistance = (p: Vector2, a: Vector2, b: Vector2) => {
+  const ab = b.clone().subtract(a);
+  const ap = p.clone().subtract(a);
+  const proj = ap.dot(ab);
+  const abLengthSquared = ab.lengthSquared();
+  const d = proj / abLengthSquared;
+  let closestPoint: Vector2;
+  if (d <= 0) {
+    closestPoint = a;
+  } else if (d >= 1) {
+    closestPoint = b;
+  } else {
+    closestPoint = a.clone().add(ab.clone().multiplyScalar(d));
+  }
+  return closestPoint.distanceTo(p);
+};
+
+export const lineCircleIntersections = (
+  circlePoint: Vector2,
+  radius: number,
+  segmentStart: Vector2,
+  segmentEnd: Vector2,
+) => {
+  const dx = segmentEnd.x - segmentStart.x;
+  const dy = segmentEnd.y - segmentStart.y;
+  const fx = segmentStart.x - circlePoint.x;
+  const fy = segmentStart.y - circlePoint.y;
+
+  const a = dx * dx + dy * dy;
+  const b = 2 * (fx * dx + fy * dy);
+  const c = fx * fx + fy * fy - radius * radius;
+
+  const det = b * b - 4 * a * c;
+
+  if (det < 0 || a <= 0.0000001) {
+    return [];
+  } else if (det === 0) {
+    const t = -b / (2 * a);
+    return [new Vector2(segmentStart.x + t * dx, segmentStart.y + t * dy)];
+  } else {
+    const t1 = (-b + Math.sqrt(det)) / (2 * a);
+    const t2 = (-b - Math.sqrt(det)) / (2 * a);
+    if (t1 > 0 && t2 > 0)
+      return [
+        new Vector2(segmentStart.x + t1 * dx, segmentStart.y + t1 * dy),
+        new Vector2(segmentStart.x + t2 * dx, segmentStart.y + t2 * dy),
+      ];
+  }
+  return [];
+};

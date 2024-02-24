@@ -2,11 +2,12 @@ import type { Arena } from "./Arena";
 import { clamp, getRandomIntInclusive, throttle } from "./utils";
 import { colors } from "./colors";
 import { bresenham } from "./bresenham";
-import { lineRayIntersectionPoint } from "./line";
+import { lineCircleIntersections, lineRayIntersectionPoint } from "./line";
 import { Vector2 } from "./primitives/Vector2";
 import { BulletPath } from "./BulletPath";
 import { Drawable } from "./Drawable";
 import type { Canvas } from "./Canvas";
+import type { Enemy } from "./Enemy";
 
 export class Player extends Drawable {
   arena: Arena;
@@ -105,7 +106,7 @@ export class Player extends Drawable {
         break;
       }
     }
-    let shotEnd: Vector2 | null = null;
+    let bulletEnd: Vector2 = shotEdgeIntersection!;
     bresenham(
       this.cx,
       this.cy,
@@ -119,26 +120,48 @@ export class Player extends Drawable {
           clamp(y - 1, 0, this.arena.height) / this.arena.gridSize,
         );
         if (this.arena.layout[cellY][cellX] === "#") {
-          shotEnd = new Vector2(x, y);
+          bulletEnd = new Vector2(x, y);
           return true;
         }
       },
     );
     const orientationNormalized = this.orientation.clone().normalize();
+    const bulletStart = this.position
+      .clone()
+      .addScalar(this.r)
+      .add(orientationNormalized.multiplyScalar(this.r));
+
+    // handle player shooting enemies
+    let enemyToHit: Enemy | null = null;
+    let distanceToEnemy: number = Infinity;
+    let hitPoint: Vector2 | null = null;
+    for (let enemy of this.arena.enemies) {
+      const intersections = lineCircleIntersections(
+        enemy.position.clone().addScalar(enemy.r),
+        enemy.r,
+        bulletStart,
+        bulletEnd,
+      );
+      if (intersections.length > 0) {
+        for (let intersection of intersections) {
+          const dist = this.position.distanceTo(intersection);
+          if (dist < distanceToEnemy) {
+            distanceToEnemy = dist;
+            enemyToHit = enemy;
+            hitPoint = intersection;
+          }
+        }
+      }
+    }
+
+    if (enemyToHit) {
+      enemyToHit.hp -= 40;
+    }
+
     this.arena.addBulletPath(
-      new BulletPath(
-        new Vector2(
-          this.cx + this.r * orientationNormalized.x,
-          this.cy + this.r * orientationNormalized.y,
-        ),
-        new Vector2(
-          (shotEnd ?? shotEdgeIntersection)?.x || 0,
-          (shotEnd ?? shotEdgeIntersection)?.y || 0,
-        ),
-        "red",
-        50,
-      ),
+      new BulletPath(bulletStart, hitPoint ?? bulletEnd, "red", 50),
     );
+
     this.arena.playSound("weapon-pistol-fire");
   }
   getHit() {

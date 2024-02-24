@@ -11,6 +11,8 @@ export class Enemy extends Drawable {
   velocity: Vector2;
   orientation: Vector2;
   size: number;
+  maxHp: number = 100;
+  hp: number = this.maxHp;
 
   constructor(arena: Arena, x: number, y: number, size: number) {
     super();
@@ -114,7 +116,12 @@ export class Enemy extends Drawable {
     }
   }
   draw(canvas: Canvas) {
-    canvas.fillCircle(this.x, this.y, this.r, colors.enemy);
+    canvas.fillCircle(
+      this.x,
+      this.y,
+      this.r,
+      `rgba(141, 141, 141, ${this.hp / this.maxHp})`,
+    );
     // orientation indicator
     const orientationNormalized = this.orientation
       .clone()
