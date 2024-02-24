@@ -79,6 +79,7 @@ export class Arena {
   layout: string[] = defaultConfig.layout.trim().split("\n");
   soundNames = ["weapon-pistol-fire"] as const;
   sounds: Record<string, AudioBuffer> = {};
+  score: number = 0;
 
   maxFPS = 60;
   lastFrameTimeMs = 0;
@@ -193,6 +194,7 @@ export class Arena {
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) {
         this.enemies.splice(this.enemies.indexOf(enemy), 1);
+        this.score += 200;
         continue;
       }
       enemy.update(delta);
@@ -231,6 +233,20 @@ export class Arena {
         this.canvas.height / 2,
       );
     }
+
+    this.canvas.ctx.shadowColor = "#000";
+    this.canvas.ctx.shadowOffsetX = 0;
+    this.canvas.ctx.shadowOffsetY = 0;
+    this.canvas.ctx.shadowBlur = 10;
+    this.canvas.ctx.textAlign = "center";
+    this.canvas.ctx.font = "bold 30px Arial";
+    this.canvas.fillText(
+      "Score: " + this.score.toString().padStart(12, "0"),
+      this.canvas.width / 2,
+      35,
+      "white",
+    );
+    this.canvas.ctx.shadowBlur = 0;
   }
   get edges(): [Vector2, Vector2][] {
     return [
