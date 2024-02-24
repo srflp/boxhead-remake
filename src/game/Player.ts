@@ -8,6 +8,7 @@ import { BulletPath } from "./BulletPath";
 import { Drawable } from "./Drawable";
 import type { Canvas } from "./Canvas";
 import type { Enemy } from "./Enemy";
+import { Blood } from "./Blood";
 
 export class Player extends Drawable {
   arena: Arena;
@@ -139,7 +140,7 @@ export class Player extends Drawable {
       const intersections = lineCircleIntersections(
         enemy.position.clone().addScalar(enemy.r),
         enemy.r,
-        bulletStart,
+        this.position.clone().addScalar(this.r),
         bulletEnd,
       );
       if (intersections.length > 0) {
@@ -168,6 +169,8 @@ export class Player extends Drawable {
   getHit() {
     if (this.hp > 0) {
       this.hp -= Math.min(this.hp, 10);
+      const blood = new Blood(this.x, this.y);
+      this.arena.bloodStains.push(blood);
       return;
     }
   }

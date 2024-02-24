@@ -17,6 +17,19 @@ interface ArenaConfig {
   layout: string;
 }
 
+const waves = [
+  { enemies: 5 },
+  { enemies: 10 },
+  { enemies: 15 },
+  { enemies: 20 },
+  { enemies: 25 },
+  { enemies: 30 },
+  { enemies: 35 },
+  { enemies: 40 },
+  { enemies: 45 },
+  { enemies: 50 },
+];
+
 const defaultConfig: ArenaConfig = {
   width: 1920,
   height: 1920,
@@ -198,6 +211,19 @@ export class Arena {
         continue;
       }
       enemy.update(delta);
+    }
+    if (this.enemies.length === 0) {
+      // respawn enemies
+      for (let i = 0; i < 5; i++) {
+        this.enemies.push(
+          new Enemy(
+            this,
+            Math.random() * this.width,
+            Math.random() * this.height,
+            this.gridSize,
+          ),
+        );
+      }
     }
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {

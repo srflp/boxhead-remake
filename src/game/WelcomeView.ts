@@ -1,3 +1,4 @@
+import { Arena } from "./Arena";
 import type { Canvas } from "./Canvas";
 import { colors } from "./colors";
 
@@ -26,6 +27,7 @@ export class WelcomeView {
     this.canvas.canvas.addEventListener("click", () => {
       this.canvas.ctx.textAlign = "right";
       this.canvas.ctx.font = "bold 13px Arial";
+
       const originalAuthor = "Original author: Sean Cooper 2007";
       const { width } = this.canvas.ctx.measureText(originalAuthor);
       if (
@@ -35,6 +37,20 @@ export class WelcomeView {
         this.canvas.mouseY < this.canvas.height - 25
       ) {
         window.open("https://www.seantcooper.com/", "_blank");
+      }
+
+      // play button
+      const playText = "Play!";
+      let fontWeight = "normal";
+      this.canvas.ctx.font = `${fontWeight} 40px Arial`;
+      const { width: playWidth } = this.canvas.ctx.measureText(playText);
+      if (
+        this.canvas.mouseX > this.canvas.width / 2 - playWidth / 2 &&
+        this.canvas.mouseX < this.canvas.width / 2 + playWidth / 2 &&
+        this.canvas.mouseY > 400 &&
+        this.canvas.mouseY < 460
+      ) {
+        new Arena(canvas, 1920, 1920);
       }
     });
 
