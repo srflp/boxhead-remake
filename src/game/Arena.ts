@@ -90,11 +90,17 @@ export class Arena {
     this.parseLayout();
     this.loadSounds();
     this.canvas = canvas;
-    this.canvas.coordsMapper = this.mapToCanvas.bind(this);
+    this.useArenaCoordsMapper();
     for (let i = 0; i < 100; i++) {
       this.floorNoisePolygons.push(new RandomPolygon(width, height));
     }
     requestAnimationFrame(this.repaint);
+  }
+  useArenaCoordsMapper() {
+    this.canvas.coordsMapper = this.mapToCanvas.bind(this);
+  }
+  useDefaultCoordsMapper() {
+    this.canvas.useDefaultCoordsMapper();
   }
   async loadSounds() {
     const fetchedSounds = await Promise.all(
@@ -192,11 +198,30 @@ export class Arena {
   }
   draw() {
     this.canvas.clear();
+    this.useArenaCoordsMapper();
     for (const polygon of this.floorNoisePolygons) polygon.draw(this.canvas);
     for (const entity of this.entities) entity.draw(this.canvas);
     for (const enemy of this.enemies) enemy.draw(this.canvas);
     for (const bulletPath of this.bulletPaths) bulletPath.draw(this.canvas);
     this.player.draw(this.canvas);
+
+    this.useDefaultCoordsMapper();
+    if (this.player.hp === 0) {
+      this.canvas.fillRect(
+        0,
+        0,
+        this.canvas.width,
+        this.canvas.height,
+        "rgba(0, 0, 0, 0.35)",
+      );
+      this.canvas.fillStyle = "white";
+      this.canvas.font = "48px serif";
+      this.canvas.fillText(
+        "Game over",
+        this.canvas.width / 2 - 100,
+        this.canvas.height / 2,
+      );
+    }
   }
   get edges(): [Vector2, Vector2][] {
     return [

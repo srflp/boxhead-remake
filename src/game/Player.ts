@@ -14,7 +14,11 @@ export class Player extends Drawable {
   velocity: Vector2;
   orientation: Vector2;
   size: number;
+  maxHp: number = 100;
+  hp: number = 100;
   tryToShoot = throttle(this.shoot, () => getRandomIntInclusive(250, 350));
+  tryToGetHit = throttle(this.getHit, 500);
+  tryToRegenerate = throttle(this.regenerate, 2000);
 
   constructor(arena: Arena, x: number, y: number, size: number) {
     super();
@@ -137,7 +141,20 @@ export class Player extends Drawable {
     );
     this.arena.playSound("weapon-pistol-fire");
   }
+  getHit() {
+    if (this.hp > 0) {
+      this.hp -= Math.min(this.hp, 10);
+      return;
+    }
+  }
+  regenerate() {
+    if (this.hp < this.maxHp) {
+      this.hp += Math.min(5, this.maxHp - this.hp);
+      return;
+    }
+  }
   update(delta: number) {
+    if (this.hp === 0) return;
     this.updateVelocity(delta);
 
     let potentialC = this.position.clone().add(this.velocity).addScalar(this.r);
@@ -182,6 +199,7 @@ export class Player extends Drawable {
         }
       }
     }
+    this.tryToRegenerate();
     // handle player collissions with enemies
     for (let enemy of this.arena.enemies) {
       if (enemy === this) continue;
@@ -190,6 +208,7 @@ export class Player extends Drawable {
       const dist = delta.length();
       const overlap = 2 * this.r - dist;
       if (overlap > 0) {
+        this.tryToGetHit();
         potentialC.subtract(delta.normalize().multiplyScalar(overlap / 2));
         this.position = potentialC.clone().subtractScalar(this.r);
       }
@@ -211,5 +230,40 @@ export class Player extends Drawable {
       .add(orientationNormalized)
       .subtractScalar(4);
     canvas.fillCircle(indicator.x, indicator.y, 4, "white");
+
+    // health indicator
+    const hpPercentage = this.hp / this.maxHp;
+    const color =
+      hpPercentage > 0.5
+        ? "#01FF00"
+        : hpPercentage > 0.25
+          ? "#FF6602"
+          : "#FF0000";
+
+    // border
+    canvas.beginPath();
+    canvas.fillStyle = "rgba(0, 0, 0, 0.15)";
+    canvas.lineJoin = "round";
+    canvas.rect(
+      this.position.x + 2,
+      this.position.y - 12,
+      this.size - 4,
+      this.size / 6,
+    );
+    canvas.stroke();
+    canvas.fill();
+    canvas.closePath();
+
+    // fill
+    canvas.beginPath();
+    canvas.fillStyle = color;
+    canvas.rect(
+      this.position.x + 2,
+      this.position.y - 12,
+      (this.size - 4) * (this.hp / this.maxHp),
+      this.size / 6,
+    );
+    canvas.fill();
+    canvas.closePath();
   }
 }

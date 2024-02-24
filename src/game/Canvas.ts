@@ -67,12 +67,42 @@ export class Canvas {
       this.mouseY = e.clientY - rect.top;
     });
   }
+  useDefaultCoordsMapper() {
+    this.coordsMapper = (x, y) => [x, y];
+  }
   focus() {
     this.canvas.focus();
   }
   clear() {
     this.ctx.fillStyle = colors.bgFloor;
     this.ctx.fillRect(0, 0, this.width, this.height);
+  }
+  beginPath() {
+    this.ctx.beginPath();
+  }
+  closePath() {
+    this.ctx.closePath();
+  }
+  stroke() {
+    this.ctx.stroke();
+  }
+  fill() {
+    this.ctx.fill();
+  }
+  rect(x: number, y: number, width: number, height: number) {
+    this.ctx.rect(...this.coordsMapper(x, y), width, height);
+  }
+  set fillStyle(color: string | CanvasGradient | CanvasPattern) {
+    this.ctx.fillStyle = color;
+  }
+  set lineJoin(join: CanvasLineJoin) {
+    this.ctx.lineJoin = join;
+  }
+  set filter(filter: string) {
+    this.ctx.filter = filter;
+  }
+  set font(font: string) {
+    this.ctx.font = font;
   }
   fillRect(
     x: number,
@@ -81,8 +111,12 @@ export class Canvas {
     height: number,
     color: string | CanvasGradient | CanvasPattern = colors.defaultColor,
   ) {
+    this.ctx.beginPath();
     this.ctx.fillStyle = color;
-    this.ctx.fillRect(...this.coordsMapper(x, y), width, height);
+    this.ctx.rect(...this.coordsMapper(x, y), width, height);
+    this.ctx.stroke();
+    this.ctx.fill();
+    this.ctx.closePath();
   }
   roundRect(
     x: number,
