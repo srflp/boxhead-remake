@@ -8,6 +8,7 @@ import { Vector2 } from "./primitives/Vector2";
 import { loadSound, playSound } from "./sound";
 import { clamp } from "./utils";
 import { Enemy } from "./Enemy";
+import type { Blood } from "./Blood";
 
 // 1920 x 1920
 interface ArenaConfig {
@@ -70,6 +71,7 @@ export class Arena {
   entities: Entity[] = [];
   enemies: Enemy[] = [];
   bulletPaths: BulletPath[] = [];
+  bloodStains: Blood[] = [];
   player!: Player;
   canvas: Canvas;
   floorNoisePolygons: RandomPolygon[] = [];
@@ -206,6 +208,7 @@ export class Arena {
     this.canvas.clear();
     this.useArenaCoordsMapper();
     for (const polygon of this.floorNoisePolygons) polygon.draw(this.canvas);
+    for (const blood of this.bloodStains) blood.draw(this.canvas);
     for (const entity of this.entities) entity.draw(this.canvas);
     for (const enemy of this.enemies) enemy.draw(this.canvas);
     for (const bulletPath of this.bulletPaths) bulletPath.draw(this.canvas);

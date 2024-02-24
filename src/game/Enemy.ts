@@ -1,9 +1,8 @@
 import type { Arena } from "./Arena";
+import { Blood } from "./Blood";
 import type { Canvas } from "./Canvas";
 import { Drawable } from "./Drawable";
-import { colors } from "./colors";
 import { Vector2 } from "./primitives/Vector2";
-import { clamp } from "./utils";
 
 export class Enemy extends Drawable {
   arena: Arena;
@@ -114,6 +113,10 @@ export class Enemy extends Drawable {
         this.position = potentialC.clone().subtractScalar(this.r);
       }
     }
+  }
+  addBlood() {
+    const blood = new Blood(this.x, this.y);
+    this.arena.bloodStains.push(blood);
   }
   draw(canvas: Canvas) {
     canvas.fillCircle(

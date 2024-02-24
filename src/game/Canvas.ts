@@ -169,4 +169,13 @@ export class Canvas {
     this.ctx.closePath();
     this.ctx.fill();
   }
+  drawImage(
+    image: CanvasImageSource,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) {
+    this.ctx.drawImage(image, ...this.coordsMapper(x, y), width, height);
+  }
 }

@@ -156,6 +156,7 @@ export class Player extends Drawable {
 
     if (enemyToHit) {
       enemyToHit.hp -= 40;
+      enemyToHit.addBlood();
     }
 
     this.arena.addBulletPath(
@@ -225,7 +226,6 @@ export class Player extends Drawable {
     this.tryToRegenerate();
     // handle player collissions with enemies
     for (let enemy of this.arena.enemies) {
-      if (enemy === this) continue;
       const enemyVector = new Vector2(enemy.cx, enemy.cy);
       const delta = enemyVector.subtract(potentialC);
       const dist = delta.length();
