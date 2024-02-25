@@ -130,7 +130,7 @@ export class Arena extends View {
     this.canvas.canvas.addEventListener(
       "click",
       () => {
-        if (this.player.hp > 0) return;
+        if (this.player.hp > 0 && !this.paused) return;
         // play button
         const playText = "Retry";
         let fontWeight = "normal";
@@ -338,7 +338,6 @@ export class Arena extends View {
         this.canvas.height / 2,
       );
     }
-
     if (this.player.hp === 0) {
       this.canvas.fillRect(
         0,
@@ -354,7 +353,8 @@ export class Arena extends View {
         this.canvas.width / 2,
         this.canvas.height / 2,
       );
-
+    }
+    if (this.player.hp === 0 || this.paused) {
       // retry button
       this.canvas.canvas.style.cursor = "auto";
       const retryText = "Retry";
