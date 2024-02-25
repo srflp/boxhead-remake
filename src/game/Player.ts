@@ -181,7 +181,7 @@ export class Player extends Drawable {
   }
   getHit() {
     if (this.hp > 0) {
-      this.hp -= Math.min(this.hp, 10);
+      this.hp -= Math.min(this.hp, 15);
       const blood = new Blood(this.x, this.y);
       this.arena.bloodStains.push(blood);
       this.arena.playSound(

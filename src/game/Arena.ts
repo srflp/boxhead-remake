@@ -34,6 +34,10 @@ const waves = [
   { enemies: 300 },
   { enemies: 350 },
   { enemies: 400 },
+  { enemies: 400 },
+  { enemies: 400 },
+  { enemies: 400 },
+  { enemies: 400 },
 ];
 
 const defaultConfig: ArenaConfig = {
