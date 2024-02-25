@@ -123,7 +123,7 @@ export const lineCircleIntersections = (
   } else {
     const t1 = (-b + Math.sqrt(det)) / (2 * a);
     const t2 = (-b - Math.sqrt(det)) / (2 * a);
-    if (t1 > 0 && t2 > 0)
+    if (t1 > 0 && t2 > 0 && t1 < 1 && t2 < 1)
       return [
         new Vector2(segmentStart.x + t1 * dx, segmentStart.y + t1 * dy),
         new Vector2(segmentStart.x + t2 * dx, segmentStart.y + t2 * dy),

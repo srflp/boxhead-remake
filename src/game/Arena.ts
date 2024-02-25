@@ -7,11 +7,12 @@ import { Player } from "./Player";
 import { Wall } from "./Wall";
 import { Vector2 } from "./primitives/Vector2";
 import { loadSound, playSound } from "./sound";
-import { clamp } from "./utils";
+import { clamp, getRandomIntInclusive } from "./utils";
 import { Enemy } from "./Enemy";
 import type { Blood } from "./Blood";
 import { View } from "./View";
 import { WelcomeView } from "./WelcomeView";
+import { Highscore } from "./Highscore";
 
 // 1920 x 1920
 interface ArenaConfig {
@@ -21,26 +22,28 @@ interface ArenaConfig {
 }
 
 const waves = [
-  { enemies: 5 },
-  { enemies: 10 },
-  { enemies: 15 },
   { enemies: 20 },
-  { enemies: 25 },
-  { enemies: 30 },
-  { enemies: 35 },
   { enemies: 40 },
-  { enemies: 45 },
-  { enemies: 50 },
+  { enemies: 60 },
+  { enemies: 80 },
+  { enemies: 100 },
+  { enemies: 140 },
+  { enemies: 180 },
+  { enemies: 220 },
+  { enemies: 250 },
+  { enemies: 300 },
+  { enemies: 350 },
+  { enemies: 400 },
 ];
 
 const defaultConfig: ArenaConfig = {
   width: 1920,
   height: 1920,
   layout: `
-##################   ###################
-#                 e e e                #
+########################################
 #                                      #
-#                  p                   #
+#                                      #
+#                                      #
 #                                      #
 #                                      #
 #                                      #
@@ -51,10 +54,10 @@ const defaultConfig: ArenaConfig = {
 #                                      #
 #                                      #
 #                      ###             #
-#             #                        #
-#              ##       ##             #
 #                                      #
+#             ###       ##             #
 #                                      #
+#                   p                  #
 #                                      #
 #                                      #
 #                 ###                  #
@@ -65,18 +68,18 @@ const defaultConfig: ArenaConfig = {
 #                                      #
 #                                      #
 #                                      #
+#                               #      # 
+#    ######                     #     ## 
+#    #                          #    ### 
+#    # ####                      ## #### 
+#    # #                      #        # 
+#    # #                       #       # 
+#    # #                       #       # 
+#    # #                       #       # 
+#    # #                       #       # 
+#    # #                       #       # 
 #                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-#                                      #
-##################   ###################
+########################################
 `,
 };
 
@@ -102,6 +105,9 @@ export class Arena extends View {
   requestAnimationFrameId: number;
   listenersAbortController = new AbortController();
   paused = false;
+  nextWave = 0;
+  emptyFields: Vector2[] = [];
+  highscore = new Highscore();
 
   maxFPS = 60;
   lastFrameTimeMs = 0;
@@ -252,6 +258,13 @@ export class Arena extends View {
             this.gridSize,
           );
         }
+        if (char === " ") {
+          this.emptyFields.push(
+            new Vector2(x * this.gridSize, y * this.gridSize).addScalar(
+              this.gridSize / 2,
+            ),
+          );
+        }
         if (char === "e") {
           this.enemies.push(
             new Enemy(
@@ -286,22 +299,38 @@ export class Arena extends View {
       if (enemy.hp <= 0) {
         this.enemies.splice(this.enemies.indexOf(enemy), 1);
         this.score += 200;
+        this.player.damage += 1;
+        if (this.score > this.highscore.get()) {
+          this.highscore.set(this.score);
+        }
         continue;
       }
       enemy.update(delta);
     }
     if (this.enemies.length === 0) {
       // respawn enemies
-      for (let i = 0; i < 5; i++) {
-        this.enemies.push(
-          new Enemy(
-            this,
-            Math.random() * this.width,
-            Math.random() * this.height,
-            this.gridSize,
-          ),
-        );
+      const numEnemies = waves[this.nextWave].enemies;
+      let fields = [];
+      let usedFieldsN: number[] = [];
+      while (fields.length < numEnemies) {
+        const n = getRandomIntInclusive(0, this.emptyFields.length);
+        if (usedFieldsN.includes(n)) continue;
+        if (
+          this.emptyFields[n].distanceTo(this.player.position) <
+          this.player.r * 2
+        )
+          continue;
+
+        fields.push(this.emptyFields[n]);
+        usedFieldsN.push(n);
       }
+
+      for (const field of fields) {
+        const cloned = field.clone().subtractScalar(this.gridSize / 2);
+        this.enemies.push(new Enemy(this, cloned.x, cloned.y, this.gridSize));
+      }
+
+      this.nextWave++;
     }
     for (const bulletPath of this.bulletPaths) {
       if (bulletPath.hasExpired()) {
@@ -407,6 +436,23 @@ export class Arena extends View {
       35,
       "white",
     );
+    this.canvas.ctx.font = "bold 16px Arial";
+    const highScoreText =
+      "High-score: " + this.highscore.get().toString().padStart(12, "0");
+    const { width: highScoreWidth } =
+      this.canvas.ctx.measureText(highScoreText);
+    this.canvas.fillText(highScoreText, this.canvas.width / 2, 60, "white");
+    if (this.highscore.updated) {
+      this.canvas.ctx.textAlign = "left";
+      this.canvas.ctx.shadowBlur = 2;
+
+      this.canvas.fillText(
+        "new high-score!",
+        this.canvas.width / 2 + highScoreWidth / 2 + 10,
+        60,
+        "red",
+      );
+    }
     this.canvas.ctx.shadowBlur = 0;
   }
   get edges(): [Vector2, Vector2][] {

@@ -21,6 +21,7 @@ export class Player extends Drawable {
   tryToShoot = throttle(this.shoot, () => getRandomIntInclusive(250, 350));
   tryToGetHit = throttle(this.getHit, 500);
   tryToRegenerate = throttle(this.regenerate, 2000);
+  damage = 40;
 
   constructor(arena: Arena, x: number, y: number, size: number) {
     super();
@@ -62,10 +63,22 @@ export class Player extends Drawable {
     const speed = 0.2;
     this.velocity.set(0, 0);
     let anyPressed = false;
-    const left = keysPressed.has("a") || keysPressed.has("ArrowLeft");
-    const right = keysPressed.has("d") || keysPressed.has("ArrowRight");
-    const up = keysPressed.has("w") || keysPressed.has("ArrowUp");
-    const down = keysPressed.has("s") || keysPressed.has("ArrowDown");
+    const left =
+      keysPressed.has("a") ||
+      keysPressed.has("A") ||
+      keysPressed.has("ArrowLeft");
+    const right =
+      keysPressed.has("d") ||
+      keysPressed.has("D") ||
+      keysPressed.has("ArrowRight");
+    const up =
+      keysPressed.has("w") ||
+      keysPressed.has("W") ||
+      keysPressed.has("ArrowUp");
+    const down =
+      keysPressed.has("s") ||
+      keysPressed.has("S") ||
+      keysPressed.has("ArrowDown");
     if (left && !right) {
       this.velocity.x = -speed;
       anyPressed = true;
@@ -156,7 +169,7 @@ export class Player extends Drawable {
     }
 
     if (enemyToHit) {
-      enemyToHit.hp -= 40;
+      enemyToHit.hp -= this.damage;
       enemyToHit.addBlood();
     }
 
