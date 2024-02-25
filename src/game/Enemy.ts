@@ -79,7 +79,15 @@ export class Enemy extends Drawable {
     // handle enemy collisions with walls
     const cell = new Vector2(0, 0);
     const cellTL = tilePrev.clone().subtractScalar(1).maxScalar(0);
-    const cellBR = tilePrev.clone().addScalar(1).min(this.arena.size);
+    const cellBR = tilePrev
+      .clone()
+      .addScalar(1)
+      .min(
+        this.arena.size
+          .clone()
+          .divideScalar(this.arena.gridSize)
+          .subtractScalar(1),
+      );
     for (cell.y = cellTL.y; cell.y <= cellBR.y; cell.y++) {
       const line = this.arena.layout[cell.y];
       for (cell.x = cellTL.x; cell.x <= cellBR.x; cell.x++) {

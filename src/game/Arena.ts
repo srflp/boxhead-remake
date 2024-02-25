@@ -1,3 +1,4 @@
+import { ViewManager } from "./ViewManager";
 import type { BulletPath } from "./BulletPath";
 import { Canvas } from "./Canvas";
 import type { Entity } from "./Entity";
@@ -9,6 +10,8 @@ import { loadSound, playSound } from "./sound";
 import { clamp } from "./utils";
 import { Enemy } from "./Enemy";
 import type { Blood } from "./Blood";
+import { View } from "./View";
+import { WelcomeView } from "./WelcomeView";
 
 // 1920 x 1920
 interface ArenaConfig {
@@ -77,7 +80,7 @@ const defaultConfig: ArenaConfig = {
 `,
 };
 
-export class Arena {
+export class Arena extends View {
   width: number;
   height: number;
   size: Vector2;
@@ -86,20 +89,32 @@ export class Arena {
   bulletPaths: BulletPath[] = [];
   bloodStains: Blood[] = [];
   player!: Player;
-  canvas: Canvas;
   floorNoisePolygons: RandomPolygon[] = [];
   gridSize: number = 48;
   layout: string[] = defaultConfig.layout.trim().split("\n");
-  soundNames = ["weapon-pistol-fire"] as const;
+  soundNames = [
+    "weapon-pistol-fire",
+    "player-scream-1",
+    "player-scream-2",
+  ] as const;
   sounds: Record<string, AudioBuffer> = {};
   score: number = 0;
+  requestAnimationFrameId: number;
+  listenersAbortController = new AbortController();
+  paused = false;
 
   maxFPS = 60;
   lastFrameTimeMs = 0;
   delta = 0;
   timestep = 1000 / this.maxFPS;
 
-  constructor(canvas: Canvas, width: number, height: number) {
+  constructor(
+    viewManager: ViewManager,
+    canvas: Canvas,
+    width: number,
+    height: number,
+  ) {
+    super(viewManager, canvas);
     this.width = width;
     this.height = height;
     this.size = new Vector2(width, height);
@@ -110,7 +125,65 @@ export class Arena {
     for (let i = 0; i < 100; i++) {
       this.floorNoisePolygons.push(new RandomPolygon(width, height));
     }
-    requestAnimationFrame(this.repaint);
+    this.requestAnimationFrameId = requestAnimationFrame(this.repaint);
+
+    this.canvas.canvas.addEventListener(
+      "click",
+      () => {
+        if (this.player.hp > 0) return;
+        // play button
+        const playText = "Retry";
+        let fontWeight = "normal";
+        this.canvas.ctx.font = `${fontWeight} 40px Arial`;
+        const { width: playWidth } = this.canvas.ctx.measureText(playText);
+        if (
+          this.canvas.mouseX > this.canvas.width / 2 - playWidth / 2 &&
+          this.canvas.mouseX < this.canvas.width / 2 + playWidth / 2 &&
+          this.canvas.mouseY > 400 &&
+          this.canvas.mouseY < 460
+        ) {
+          this.viewManager.view = new Arena(
+            this.viewManager,
+            canvas,
+            1920,
+            1920,
+          );
+        }
+
+        // retry button
+        const mainMenuText = "Main menu";
+        this.canvas.ctx.font = `normal 40px Arial`;
+        const { width: mainMenuWidth } = this.canvas.ctx.measureText(playText);
+        if (
+          this.canvas.mouseX > this.canvas.width / 2 - mainMenuWidth / 2 &&
+          this.canvas.mouseX < this.canvas.width / 2 + mainMenuWidth / 2 &&
+          this.canvas.mouseY > 460 &&
+          this.canvas.mouseY < 520
+        ) {
+          this.viewManager.view = new WelcomeView(this.viewManager, canvas);
+        }
+      },
+      { signal: this.listenersAbortController.signal },
+    );
+
+    this.canvas.canvas.addEventListener(
+      "keydown",
+      (e) => {
+        if (
+          !e.repeat &&
+          (e.key === "p" || e.key === "P") &&
+          this.player.hp > 0
+        ) {
+          this.paused = !this.paused;
+        }
+      },
+      { signal: this.listenersAbortController.signal },
+    );
+  }
+  destroy() {
+    cancelAnimationFrame(this.requestAnimationFrameId);
+    this.canvas.canvas.style.cursor = "auto";
+    this.listenersAbortController.abort();
   }
   useArenaCoordsMapper() {
     this.canvas.coordsMapper = this.mapToCanvas.bind(this);
@@ -132,24 +205,29 @@ export class Arena {
     playSound(this.sounds[soundName]);
   }
   repaint = (timestamp: DOMHighResTimeStamp = 0) => {
+    // if (this.player.hp <= 0) return;
+
     if (timestamp < this.lastFrameTimeMs + 1000 / this.maxFPS) {
-      requestAnimationFrame(this.repaint);
+      this.requestAnimationFrameId = requestAnimationFrame(this.repaint);
       return;
     }
-    this.delta += timestamp - this.lastFrameTimeMs;
-    this.lastFrameTimeMs = timestamp;
+    if (!this.paused) {
+      this.delta += timestamp - this.lastFrameTimeMs;
+      this.lastFrameTimeMs = timestamp;
 
-    let numUpdateSteps = 0;
-    while (this.delta >= this.timestep) {
-      this.update(this.timestep);
-      this.delta -= this.timestep;
-      if (++numUpdateSteps >= 240) {
-        this.delta = 0;
-        break;
+      let numUpdateSteps = 0;
+      while (this.delta >= this.timestep) {
+        this.update(this.timestep);
+        this.delta -= this.timestep;
+        if (++numUpdateSteps >= 5) {
+          this.delta = 0;
+          break;
+        }
       }
     }
     this.draw();
-    requestAnimationFrame(this.repaint);
+
+    this.requestAnimationFrameId = requestAnimationFrame(this.repaint);
   };
   parseLayout() {
     for (let y = 0; y < this.layout.length; y++) {
@@ -243,6 +321,24 @@ export class Arena {
     this.player.draw(this.canvas);
 
     this.useDefaultCoordsMapper();
+
+    if (this.paused) {
+      this.canvas.fillRect(
+        0,
+        0,
+        this.canvas.width,
+        this.canvas.height,
+        "rgba(0, 0, 0, 0.35)",
+      );
+      this.canvas.fillStyle = "white";
+      this.canvas.font = "48px serif";
+      this.canvas.fillText(
+        "Paused",
+        this.canvas.width / 2,
+        this.canvas.height / 2,
+      );
+    }
+
     if (this.player.hp === 0) {
       this.canvas.fillRect(
         0,
@@ -258,8 +354,47 @@ export class Arena {
         this.canvas.width / 2,
         this.canvas.height / 2,
       );
+
+      // retry button
+      this.canvas.canvas.style.cursor = "auto";
+      const retryText = "Retry";
+      let retryFontWeight = "normal";
+      this.canvas.ctx.font = `${retryFontWeight} 40px Arial`;
+      const { width: retryWidth } = this.canvas.ctx.measureText(retryText);
+      if (
+        this.canvas.mouseX > this.canvas.width / 2 - retryWidth / 2 &&
+        this.canvas.mouseX < this.canvas.width / 2 + retryWidth / 2 &&
+        this.canvas.mouseY > 400 &&
+        this.canvas.mouseY < 460
+      ) {
+        retryFontWeight = "bold";
+        this.canvas.canvas.style.cursor = "pointer";
+      }
+      this.canvas.ctx.textAlign = "center";
+      this.canvas.ctx.font = `${retryFontWeight} 40px Arial`;
+      this.canvas.fillText(retryText, this.canvas.width / 2, 440, "black");
+
+      // main menu button
+      const mainMenuButton = "Main menu";
+      let mainMenuFontWeight = "normal";
+      this.canvas.ctx.font = `${mainMenuFontWeight} 40px Arial`;
+      const { width: mainMenuWidth } =
+        this.canvas.ctx.measureText(mainMenuButton);
+      if (
+        this.canvas.mouseX > this.canvas.width / 2 - mainMenuWidth / 2 &&
+        this.canvas.mouseX < this.canvas.width / 2 + mainMenuWidth / 2 &&
+        this.canvas.mouseY > 460 &&
+        this.canvas.mouseY < 520
+      ) {
+        mainMenuFontWeight = "bold";
+        this.canvas.canvas.style.cursor = "pointer";
+      }
+      this.canvas.ctx.textAlign = "center";
+      this.canvas.ctx.font = `${mainMenuFontWeight} 40px Arial`;
+      this.canvas.fillText(mainMenuButton, this.canvas.width / 2, 500, "black");
     }
 
+    // score
     this.canvas.ctx.shadowColor = "#000";
     this.canvas.ctx.shadowOffsetX = 0;
     this.canvas.ctx.shadowOffsetY = 0;

@@ -1,14 +1,17 @@
+import { ViewManager } from "./ViewManager";
 import { Arena } from "./Arena";
 import type { Canvas } from "./Canvas";
+import { View } from "./View";
 import { colors } from "./colors";
 
-export class WelcomeView {
-  canvas: Canvas;
+export class WelcomeView extends View {
   img: HTMLImageElement;
   imgLoaded = false;
+  requestAnimationFrameId: number | null = null;
+  clickAbortController = new AbortController();
 
-  constructor(canvas: Canvas) {
-    this.canvas = canvas;
+  constructor(viewManager: ViewManager, canvas: Canvas) {
+    super(viewManager, canvas);
 
     this.canvas.fillRect(
       0,
@@ -24,35 +27,44 @@ export class WelcomeView {
       this.imgLoaded = true;
     };
 
-    this.canvas.canvas.addEventListener("click", () => {
-      this.canvas.ctx.textAlign = "right";
-      this.canvas.ctx.font = "bold 13px Arial";
+    this.canvas.canvas.addEventListener(
+      "click",
+      () => {
+        this.canvas.ctx.textAlign = "right";
+        this.canvas.ctx.font = "bold 13px Arial";
 
-      const originalAuthor = "Original author: Sean Cooper 2007";
-      const { width } = this.canvas.ctx.measureText(originalAuthor);
-      if (
-        this.canvas.mouseX > this.canvas.width - 10 - width &&
-        this.canvas.mouseX < this.canvas.width - 10 &&
-        this.canvas.mouseY > this.canvas.height - 40 &&
-        this.canvas.mouseY < this.canvas.height - 25
-      ) {
-        window.open("https://www.seantcooper.com/", "_blank");
-      }
+        const originalAuthor = "Original author: Sean Cooper 2007";
+        const { width } = this.canvas.ctx.measureText(originalAuthor);
+        if (
+          this.canvas.mouseX > this.canvas.width - 10 - width &&
+          this.canvas.mouseX < this.canvas.width - 10 &&
+          this.canvas.mouseY > this.canvas.height - 40 &&
+          this.canvas.mouseY < this.canvas.height - 25
+        ) {
+          window.open("https://www.seantcooper.com/", "_blank");
+        }
 
-      // play button
-      const playText = "Play!";
-      let fontWeight = "normal";
-      this.canvas.ctx.font = `${fontWeight} 40px Arial`;
-      const { width: playWidth } = this.canvas.ctx.measureText(playText);
-      if (
-        this.canvas.mouseX > this.canvas.width / 2 - playWidth / 2 &&
-        this.canvas.mouseX < this.canvas.width / 2 + playWidth / 2 &&
-        this.canvas.mouseY > 400 &&
-        this.canvas.mouseY < 460
-      ) {
-        new Arena(canvas, 1920, 1920);
-      }
-    });
+        // play button
+        const playText = "Play!";
+        let fontWeight = "normal";
+        this.canvas.ctx.font = `${fontWeight} 40px Arial`;
+        const { width: playWidth } = this.canvas.ctx.measureText(playText);
+        if (
+          this.canvas.mouseX > this.canvas.width / 2 - playWidth / 2 &&
+          this.canvas.mouseX < this.canvas.width / 2 + playWidth / 2 &&
+          this.canvas.mouseY > 400 &&
+          this.canvas.mouseY < 460
+        ) {
+          this.viewManager.view = new Arena(
+            this.viewManager,
+            canvas,
+            1920,
+            1920,
+          );
+        }
+      },
+      { signal: this.clickAbortController.signal },
+    );
 
     this.repaint();
   }
@@ -116,6 +128,14 @@ export class WelcomeView {
       colors.text,
     );
 
-    requestAnimationFrame(this.repaint);
+    this.requestAnimationFrameId = requestAnimationFrame(this.repaint);
   };
+
+  destroy() {
+    if (this.requestAnimationFrameId !== null) {
+      cancelAnimationFrame(this.requestAnimationFrameId);
+    }
+    this.clickAbortController.abort();
+    this.canvas.canvas.style.cursor = "auto";
+  }
 }

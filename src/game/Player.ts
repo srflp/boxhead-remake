@@ -171,6 +171,11 @@ export class Player extends Drawable {
       this.hp -= Math.min(this.hp, 10);
       const blood = new Blood(this.x, this.y);
       this.arena.bloodStains.push(blood);
+      this.arena.playSound(
+        `player-scream-${getRandomIntInclusive(1, 2)}` as
+          | "player-scream-1"
+          | "player-scream-2",
+      );
       return;
     }
   }
@@ -203,7 +208,15 @@ export class Player extends Drawable {
     // handle player collisions with walls
     const cell = new Vector2(0, 0);
     const cellTL = tilePrev.clone().subtractScalar(1).maxScalar(0);
-    const cellBR = tilePrev.clone().addScalar(1).min(this.arena.size);
+    const cellBR = tilePrev
+      .clone()
+      .addScalar(1)
+      .min(
+        this.arena.size
+          .clone()
+          .divideScalar(this.arena.gridSize)
+          .subtractScalar(1),
+      );
     for (cell.y = cellTL.y; cell.y <= cellBR.y; cell.y++) {
       const line = this.arena.layout[cell.y];
       for (cell.x = cellTL.x; cell.x <= cellBR.x; cell.x++) {
