@@ -357,10 +357,11 @@ export class Arena extends View {
         0,
         this.canvas.width,
         this.canvas.height,
-        "rgba(0, 0, 0, 0.35)",
+        "rgba(255, 255, 255, 0.429)",
       );
       this.canvas.fillStyle = "white";
       this.canvas.font = "48px serif";
+      this.canvas.ctx.textAlign = "center";
       this.canvas.fillText(
         "Paused",
         this.canvas.width / 2,
@@ -373,7 +374,7 @@ export class Arena extends View {
         0,
         this.canvas.width,
         this.canvas.height,
-        "rgba(0, 0, 0, 0.35)",
+        "rgba(255, 255, 255, 0.429)",
       );
       this.canvas.fillStyle = "white";
       this.canvas.font = "48px serif";
