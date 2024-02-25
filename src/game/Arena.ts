@@ -99,6 +99,7 @@ export class Arena extends View {
     "weapon-pistol-fire",
     "player-scream-1",
     "player-scream-2",
+    "new-wave",
   ] as const;
   sounds: Record<string, AudioBuffer> = {};
   score: number = 0;
@@ -313,7 +314,7 @@ export class Arena extends View {
       let fields = [];
       let usedFieldsN: number[] = [];
       while (fields.length < numEnemies) {
-        const n = getRandomIntInclusive(0, this.emptyFields.length);
+        const n = getRandomIntInclusive(0, this.emptyFields.length - 1);
         if (usedFieldsN.includes(n)) continue;
         if (
           this.emptyFields[n].distanceTo(this.player.position) <
@@ -329,6 +330,9 @@ export class Arena extends View {
         const cloned = field.clone().subtractScalar(this.gridSize / 2);
         this.enemies.push(new Enemy(this, cloned.x, cloned.y, this.gridSize));
       }
+
+      // play sound here
+      this.playSound("new-wave");
 
       this.nextWave++;
     }
