@@ -2,6 +2,7 @@ import type { Arena } from "./Arena";
 import { Blood } from "./Blood";
 import type { Canvas } from "./Canvas";
 import { Drawable } from "./Drawable";
+import { Wall } from "./Wall";
 import { Vector2 } from "./primitives/Vector2";
 
 export class Enemy extends Drawable {
@@ -89,9 +90,9 @@ export class Enemy extends Drawable {
           .subtractScalar(1),
       );
     for (cell.y = cellTL.y; cell.y <= cellBR.y; cell.y++) {
-      const line = this.arena.layout[cell.y];
+      const line = this.arena.parsedLayout[cell.y];
       for (cell.x = cellTL.x; cell.x <= cellBR.x; cell.x++) {
-        if (line[cell.x] === "#") {
+        if (line[cell.x] instanceof Wall) {
           const cellCoords = cell.clone().multiplyScalar(this.arena.gridSize);
           const nearest = potentialC
             .clone()

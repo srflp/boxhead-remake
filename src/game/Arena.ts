@@ -1,10 +1,9 @@
 import { ViewManager } from "./ViewManager";
 import type { BulletPath } from "./BulletPath";
 import { Canvas } from "./Canvas";
-import type { Entity } from "./Entity";
 import { RandomPolygon } from "./RandomPolygon";
 import { Player } from "./Player";
-import { Wall } from "./Wall";
+import { DisappearingWall, Wall } from "./Wall";
 import { Vector2 } from "./primitives/Vector2";
 import { loadSound, playSound } from "./sound";
 import { clamp, getRandomIntInclusive } from "./utils";
@@ -91,7 +90,6 @@ export class Arena extends View {
   width: number;
   height: number;
   size: Vector2;
-  entities: Entity[] = [];
   enemies: Enemy[] = [];
   bulletPaths: BulletPath[] = [];
   bloodStains: Blood[] = [];
@@ -99,6 +97,7 @@ export class Arena extends View {
   floorNoisePolygons: RandomPolygon[] = [];
   gridSize: number = 48;
   layout: string[] = defaultConfig.layout.trim().split("\n");
+  parsedLayout: (Wall | undefined)[][] = [];
   soundNames = [
     "weapon-pistol-fire",
     "player-scream-1",
@@ -243,10 +242,11 @@ export class Arena extends View {
   parseLayout() {
     for (let y = 0; y < this.layout.length; y++) {
       const line = this.layout[y];
+      const parsedLine: (Wall | undefined)[] = [];
       for (let x = 0; x < line.length; x++) {
         const char = line[x];
         if (char === "#") {
-          this.addEntity(
+          parsedLine.push(
             new Wall(
               x * this.gridSize,
               y * this.gridSize,
@@ -254,6 +254,8 @@ export class Arena extends View {
               this.gridSize,
             ),
           );
+        } else {
+          parsedLine.push(undefined);
         }
         if (char === "p") {
           this.player = new Player(
@@ -281,10 +283,8 @@ export class Arena extends View {
           );
         }
       }
+      this.parsedLayout.push(parsedLine);
     }
-  }
-  addEntity(entity: Entity) {
-    this.entities.push(entity);
   }
   addBulletPath(bulletPath: BulletPath) {
     this.bulletPaths.push(bulletPath);
@@ -340,10 +340,19 @@ export class Arena extends View {
 
       this.nextWave++;
     }
-    for (const bulletPath of this.bulletPaths) {
-      if (bulletPath.hasExpired()) {
-        this.bulletPaths.splice(this.bulletPaths.indexOf(bulletPath), 1);
+    for (let i = 0; i < this.bulletPaths.length; i++) {
+      if (this.bulletPaths[i].hasExpired()) {
+        this.bulletPaths.splice(i, 1);
         continue;
+      }
+    }
+    for (let y = 0; y < this.parsedLayout.length; y++) {
+      const row = this.parsedLayout[y];
+      for (let x = 0; x < row.length; x++) {
+        const wall = this.parsedLayout[y][x];
+        if (wall instanceof DisappearingWall && wall.hasExpired()) {
+          this.parsedLayout[y][x] = undefined;
+        }
       }
     }
   }
@@ -352,7 +361,8 @@ export class Arena extends View {
     this.useArenaCoordsMapper();
     for (const polygon of this.floorNoisePolygons) polygon.draw(this.canvas);
     for (const blood of this.bloodStains) blood.draw(this.canvas);
-    for (const entity of this.entities) entity.draw(this.canvas);
+    for (const row of this.parsedLayout)
+      for (const wall of row) wall?.draw(this.canvas);
     for (const enemy of this.enemies) enemy.draw(this.canvas);
     for (const bulletPath of this.bulletPaths) bulletPath.draw(this.canvas);
     this.player.draw(this.canvas);

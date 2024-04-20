@@ -9,6 +9,7 @@ import { Drawable } from "./Drawable";
 import type { Canvas } from "./Canvas";
 import type { Enemy } from "./Enemy";
 import { Blood } from "./Blood";
+import { DisappearingWall, Wall } from "./Wall";
 
 export class Player extends Drawable {
   arena: Arena;
@@ -22,6 +23,7 @@ export class Player extends Drawable {
   tryToGetHit = throttle(this.getHit, 500);
   tryToRegenerate = throttle(this.regenerate, 2000);
   damage = 40;
+  weapon: "pistol" | "wall" = "pistol";
 
   constructor(arena: Arena, x: number, y: number, size: number) {
     super();
@@ -133,7 +135,7 @@ export class Player extends Drawable {
         const cellY = Math.floor(
           clamp(y - 1, 0, this.arena.height) / this.arena.gridSize,
         );
-        if (this.arena.layout[cellY][cellX] === "#") {
+        if (this.arena.parsedLayout[cellY][cellX] instanceof Wall) {
           bulletEnd = new Vector2(x, y);
           return true;
         }
@@ -198,9 +200,18 @@ export class Player extends Drawable {
       return;
     }
   }
+  changeWeapon() {
+    const { keysPressed } = this.arena.canvas;
+    if (keysPressed.has("1")) {
+      this.weapon = "pistol";
+    } else if (keysPressed.has("2")) {
+      this.weapon = "wall";
+    }
+  }
   update(delta: number) {
     if (this.hp === 0) return;
     this.updateVelocity(delta);
+    this.changeWeapon();
 
     let potentialC = this.position.clone().add(this.velocity).addScalar(this.r);
 
@@ -231,9 +242,9 @@ export class Player extends Drawable {
           .subtractScalar(1),
       );
     for (cell.y = cellTL.y; cell.y <= cellBR.y; cell.y++) {
-      const line = this.arena.layout[cell.y];
+      const line = this.arena.parsedLayout[cell.y];
       for (cell.x = cellTL.x; cell.x <= cellBR.x; cell.x++) {
-        if (line[cell.x] === "#") {
+        if (line[cell.x] instanceof Wall) {
           const cellCoords = cell.clone().multiplyScalar(this.arena.gridSize);
           const nearest = potentialC
             .clone()
@@ -265,7 +276,19 @@ export class Player extends Drawable {
         this.position = potentialC.clone().subtractScalar(this.r);
       }
     }
-    if (this.arena.canvas.keysPressed.has(" ")) this.tryToShoot();
+    if (this.arena.canvas.keysPressed.has(" ")) {
+      if (this.weapon === "pistol") {
+        this.tryToShoot();
+      } else if (this.weapon === "wall") {
+        this.arena.parsedLayout[tilePrev.y][tilePrev.x] = new DisappearingWall(
+          tilePrev.x * this.arena.gridSize,
+          tilePrev.y * this.arena.gridSize,
+          this.arena.gridSize,
+          this.arena.gridSize,
+          5000,
+        );
+      }
+    }
   }
   draw(canvas: Canvas) {
     // player's circle
@@ -282,6 +305,9 @@ export class Player extends Drawable {
       .add(orientationNormalized)
       .subtractScalar(4);
     canvas.fillCircle(indicator.x, indicator.y, 4, "white");
+
+    // current weapon
+    canvas.fillText(this.weapon, this.cx, this.cy - this.size);
 
     // health indicator
     const hpPercentage = this.hp / this.maxHp;

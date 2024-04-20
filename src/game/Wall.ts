@@ -11,3 +11,23 @@ export class Wall extends Entity {
     canvas.roundRect(this.x, this.y, this.width, this.height, 4, colors.wall);
   }
 }
+
+export class DisappearingWall extends Wall {
+  constructor(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    public duration: number,
+    public launchedAt: Date = new Date(),
+  ) {
+    super(x, y, width, height);
+  }
+  hasExpired() {
+    return new Date().getTime() - this.launchedAt.getTime() > this.duration;
+  }
+  draw(canvas: Canvas) {
+    canvas.ctx.strokeStyle = "black";
+    canvas.roundRect(this.x, this.y, this.width, this.height, 4, colors.wall);
+  }
+}

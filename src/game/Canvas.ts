@@ -21,6 +21,8 @@ export class Canvas {
     "ArrowDown",
     "ArrowRight",
     " ",
+    "1",
+    "2",
   ]);
   mouseX: number = 0;
   mouseY: number = 0;
